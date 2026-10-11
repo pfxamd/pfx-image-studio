@@ -60,11 +60,14 @@ try {
   const report = JSON.parse(await page.locator('#report').innerText());
   assert.equal(report.result, 'passed');
   assert.equal(report.release, version);
-  assert.equal(report.cases.length, 4);
-  assert.equal(report.cases[3].repetitions, 10);
+  assert.equal(report.schemaVersion, 2);
+  assert.equal(report.cases.length, 6);
+  assert.deepEqual(report.cases.map(entry => entry.repetitions), [1,5,5,5,5,10]);
+  assert.ok(report.startup.firstConversionMs > 0);
+  assert.ok(report.startup.warmedConversionMedianMs > 0);
   assert.deepEqual(errors, []);
   console.log('PUBLIC_DEVICE_DIAGNOSTICS_VERIFIED', JSON.stringify({
-    page:diagnosticUrl, release:version, samples:13, elapsedMs:report.totalElapsedMs
+    page:diagnosticUrl, release:version, samples:31, elapsedMs:report.totalElapsedMs
   }));
 } finally {
   await browser?.close();

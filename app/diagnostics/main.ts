@@ -1,5 +1,5 @@
 import { studioReleaseLabel } from '../release.js';
-import { runPhoneDiagnostics, type PhoneDiagnosticReport } from './runner.js';
+import { DIAGNOSTIC_OPERATIONS, runPhoneDiagnostics, type PhoneDiagnosticReport } from './runner.js';
 import './style.css';
 
 function element<T extends HTMLElement>(id: string): T {
@@ -34,16 +34,20 @@ function render(result: PhoneDiagnosticReport): void {
   const stats = document.createElement('dl');
   stats.className = 'metrics';
   stats.innerHTML =
-    metric('Total processing', result.totalElapsedMs + ' ms') +
-    metric('Frames during test', String(frames.animationFrames)) +
-    metric('Longest frame gap', frames.longestFrameGapMs === null
+    metric('Total benchmark', result.totalElapsedMs + ' ms') +
+    metric('First conversion', result.startup.firstConversionMs + ' ms') +
+    metric('Warmed median', result.startup.warmedConversionMedianMs + ' ms') +
+    metric('First / warmed', result.startup.firstToWarmRatio + '×') +
+    metric('Longest UI frame gap', frames.longestFrameGapMs === null
       ? 'Not measurable' : frames.longestFrameGapMs + ' ms') +
     metric('JS heap after', memory.afterMiB === null ? 'Unavailable'
       : memory.afterMiB + ' MiB (partial)');
   const table = document.createElement('table');
   table.className = 'caseTable';
+  const scroll = document.createElement('div');
+  scroll.className = 'tableScroll';
   const head = document.createElement('thead');
-  head.innerHTML = '<tr><th scope="col">Workload</th><th scope="col">Time</th></tr>';
+  head.innerHTML = '<tr><th scope="col">Workload</th><th scope="col">Median</th><th scope="col">P90</th><th scope="col">UI gaps &gt;50ms</th></tr>';
   table.append(head);
   const body = document.createElement('tbody');
   for (const sample of result.cases) {
@@ -51,18 +55,24 @@ function render(result: PhoneDiagnosticReport): void {
     const name = document.createElement('td');
     name.textContent = sample.label + ' · ' + sample.source + ' → ' + sample.target +
       (sample.repetitions > 1 ? ' (' + sample.repetitions + ' images)' : '');
-    const time = document.createElement('td');
-    time.textContent = sample.totalMs + ' ms';
-    row.append(name, time);
+    const med = document.createElement('td');
+    med.textContent = sample.medianMs + ' ms';
+    const p90 = document.createElement('td');
+    p90.textContent = sample.p90Ms + ' ms';
+    const gaps = document.createElement('td');
+    gaps.textContent = String(sample.responsiveness.gapsAbove50ms);
+    row.append(name, med, p90, gaps);
     body.append(row);
   }
   table.append(body);
+  scroll.append(table);
   const info = document.createElement('p');
   info.className = 'notes';
   info.textContent = 'Browser: ' + result.platform.browser +
     ' · Main-thread gaps above 50 ms: ' + frames.gapsAbove50ms +
-    '. Pixel memory figures are estimates, not actual peak RAM.';
-  summary.replaceChildren(stats, table, info);
+    '. Worker creation: ' + result.startup.workerPoolConstructionMs +
+    ' ms. The first conversion may include lazy codec startup. JS heap readings and pixel buffer estimates do not measure peak physical RAM.';
+  summary.replaceChildren(stats, scroll, info);
   badge.textContent = 'Completed';
   report.hidden = false;
   report.textContent = reportText;
@@ -84,7 +94,8 @@ start.addEventListener('click', () => {
   summary.textContent = 'Running synthetic local image workloads…';
   badge.textContent = 'Running';
   progress.value = 0;
-  counter.textContent = '0/13';
+  counter.textContent = '0/' + DIAGNOSTIC_OPERATIONS;
+  progress.max = DIAGNOSTIC_OPERATIONS;
   setBusy(true);
   const current = controller;
   void runPhoneDiagnostics(current.signal, (done, total, label) => {
