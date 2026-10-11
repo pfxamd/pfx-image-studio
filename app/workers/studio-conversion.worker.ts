@@ -8,6 +8,7 @@ import { convertInline } from '../../src/pipeline/convert.js';
 import type { ConversionResult } from '../../src/types/core.js';
 import type { WorkerRequest, WorkerResponse } from '../../src/workers/protocol.js';
 import { validateResizeWidth, type StudioResizeOptions } from '../lib/resizeSettings.js';
+import { timingRegistry, type TimedConversionResult, type DiagnosticWorkerTiming } from './diagnosticTiming.js';
 
 const scope = self as DedicatedWorkerGlobalScope;
 
@@ -19,6 +20,12 @@ scope.addEventListener('message', (event: MessageEvent<WorkerRequest>) => {
 });
 
 async function runConversion(request: WorkerRequest): Promise<void> {
+  const started = performance.now();
+  const diagnostic = (request.options as typeof request.options & { diagnosticTiming?: boolean }).diagnosticTiming === true;
+  const stages: Partial<DiagnosticWorkerTiming> = {};
+  const finish = (result: ConversionResult): TimedConversionResult => diagnostic
+    ? { ...result, diagnosticTiming: { ...stages, workerElapsedMs: performance.now() - started } }
+    : result;
   try {
     const maxWidth = (request.options as typeof request.options & StudioResizeOptions).rasterMaxWidth;
 
@@ -26,9 +33,11 @@ async function runConversion(request: WorkerRequest): Promise<void> {
       validateResizeWidth(maxWidth);
       post({ type: 'progress', jobId: request.jobId, progress: { stage: 'validating', ratio: 0.05 } });
 
+      const inspectionStart = performance.now();
       const source = new Uint8Array(request.input instanceof Blob
         ? await request.input.arrayBuffer() : request.input);
       const original = await createRasterCore().inspect(source);
+      if (diagnostic) stages.inputReadInspectMs = performance.now() - inspectionStart;
 
       if (original.width > maxWidth) {
         post({ type: 'progress', jobId: request.jobId, progress: { stage: 'processing', ratio: 0.2 } });
@@ -36,14 +45,20 @@ async function runConversion(request: WorkerRequest): Promise<void> {
         // ICC-to-sRGB conversion remains an explicit resize opt-in.
         const resized = await resizeToRgba(source, {
           resize: { width: maxWidth, kernel: 'lanczos3' }, colorProfile: 'srgb'
-        });
+        }, undefined, diagnostic ? metrics => {
+          stages.bitmapDecodeMs = metrics.bitmapDecodeMs;
+          stages.pixelExtractionMs = metrics.pixelExtractionMs;
+          stages.resampleMs = metrics.resampleMs;
+        } : undefined);
         post({ type: 'progress', jobId: request.jobId, progress: { stage: 'encoding', ratio: 0.7 } });
 
         // Same codecs, quality, PNG compression and alpha flattening controls
         // as Image3. No intermediate PNG bytes exist in this code path.
+        const encoderStart = performance.now();
         const encoded = await defaultCodecRegistry.get(request.options.format).encode(
           resized, request.options
         );
+        if (diagnostic) stages.codecEncodeMs = performance.now() - encoderStart;
         const descriptor = outputDescriptor(request.options.format);
         const outputName = buildOutputName(request.name, request.options.format);
         const result: ConversionResult = {
@@ -59,7 +74,7 @@ async function runConversion(request: WorkerRequest): Promise<void> {
           ...(outputName === undefined ? {} : { outputName }),
         };
         post({ type: 'progress', jobId: request.jobId, progress: { stage: 'completed', ratio: 1 } });
-        post({ type: 'complete', jobId: request.jobId, result }, [result.buffer]);
+        post({ type: 'complete', jobId: request.jobId, result: finish(result) }, [result.buffer]);
         return;
       }
     }
@@ -73,6 +88,7 @@ async function runConversion(request: WorkerRequest): Promise<void> {
         ...(request.mimeType ? { mimeType: request.mimeType } : {}),
       },
       options: request.options,
+      ...(diagnostic ? { registry: timingRegistry(stages) } : {}),
       onProgress: (progress) => {
         post({
           type: 'progress', jobId: request.jobId,
@@ -83,7 +99,7 @@ async function runConversion(request: WorkerRequest): Promise<void> {
         });
       },
     });
-    post({ type: 'complete', jobId: request.jobId, result }, [result.buffer]);
+    post({ type: 'complete', jobId: request.jobId, result: finish(result) }, [result.buffer]);
   } catch (error) {
     const coreError = error instanceof Image3CoreError
       ? error
