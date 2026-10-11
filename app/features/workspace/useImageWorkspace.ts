@@ -9,6 +9,7 @@ import {
   type ConversionResult,
   type Image3WorkerPool,
 } from '../../../src/index.js';
+import { sourceFormat, type OperationId } from '../../operations/definitions.js';
 import { createImage3WorkerPool } from '../../lib/createWorkerPool.js';
 import { downloadResult, downloadResults } from '../../lib/download.js';
 import { validateResizeWidth } from '../../lib/resizeSettings.js';
@@ -112,7 +113,7 @@ export function useImageWorkspace() {
   );
 
   const convertItem = useCallback(
-    async (id: string): Promise<ConversionResult | undefined> => {
+    async (id: string, operation: OperationId = 'convert'): Promise<ConversionResult | undefined> => {
       const item = stateRef.current.items.find((candidate) => candidate.id === id);
       if (!item || item.status === 'converting' || controllers.current.has(id)) return undefined;
 
@@ -124,14 +125,16 @@ export function useImageWorkspace() {
       dispatch({ type: 'start', id });
 
       const itemSettings = item.overrideSettings ?? stateRef.current.settings;
+      const resizing = operation === 'resize';
+      const target = operation === 'convert' ? itemSettings.format : sourceFormat(item.file);
       const options = {
-        ...buildConversionOptions(itemSettings),
-        ...(itemSettings.resizeEnabled ? { rasterMaxWidth: itemSettings.resizeMaxWidth } : {}),
+        ...buildConversionOptions({ ...itemSettings, format: target }),
+        ...(resizing ? { rasterMaxWidth: itemSettings.resizeMaxWidth } : {}),
       };
 
       let releaseResize: (() => void) | undefined;
       try {
-        if (itemSettings.resizeEnabled) {
+        if (resizing) {
           validateResizeWidth(itemSettings.resizeMaxWidth);
           // Large Canvas RGBA buffers are outside Image3's codec memory estimate.
           // Keep only one resizing job live; cancelled queued jobs exit promptly.
@@ -163,7 +166,7 @@ export function useImageWorkspace() {
               },
             );
 
-            dispatch({ type: 'success', id, result });
+            dispatch({ type: 'success', id, result, operation });
             return result;
           } catch (error) {
             if (
@@ -202,12 +205,12 @@ export function useImageWorkspace() {
     [],
   );
 
-  const convertAll = useCallback(async () => {
+  const convertAll = useCallback(async (operation: OperationId = 'convert') => {
     const ids = stateRef.current.items
-      .filter((item) => item.status !== 'converting' && item.result === undefined)
+      .filter((item) => item.status !== 'converting' && (item.result === undefined || item.resultOperation !== operation))
       .map((item) => item.id);
 
-    await Promise.allSettled(ids.map((id) => convertItem(id)));
+    await Promise.allSettled(ids.map((id) => convertItem(id, operation)));
   }, [convertItem]);
 
   const cancelItem = useCallback((id: string) => {
@@ -221,9 +224,9 @@ export function useImageWorkspace() {
   }, []);
 
   const retryItem = useCallback(
-    async (id: string) => {
+    async (id: string, operation: OperationId = 'convert') => {
       dispatch({ type: 'reset', id });
-      return convertItem(id);
+      return convertItem(id, operation);
     },
     [convertItem],
   );
@@ -236,9 +239,9 @@ export function useImageWorkspace() {
     if (result) downloadResult(result);
   }, []);
 
-  const downloadAll = useCallback(() => {
+  const downloadAll = useCallback((operation: OperationId = 'convert') => {
     const results = stateRef.current.items.flatMap((item) =>
-      item.result ? [item.result] : [],
+      item.result && item.resultOperation === operation ? [item.result] : [],
     );
 
     downloadResults(results);
