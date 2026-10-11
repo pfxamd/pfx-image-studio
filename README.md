@@ -2,11 +2,23 @@
 
 Live app: https://pfxamd.github.io/pfx-image-studio/
 
-**App release:** Alpha 0.3.1. The browser interface release is independent of the frozen conversion core (`0.1.0`). The navbar badge reads from `app/release.ts`. Increase `studioVersion` with every change; CI and the Pages deployment workflow reject updates without a version increase.
+**App release:** Alpha 0.3.3. The browser interface release is independent of the frozen conversion core (`0.1.0`). The navbar badge reads from `app/release.ts`. Increase `studioVersion` with every change; CI and the Pages deployment workflow reject updates without a version increase.
 
 Browser-first image conversion core for **JPG, PNG and WEBP**.
 
 `Core v0.1` is frozen as the conversion engine. The browser application lives in a separate `app/` layer and consumes the public core API.
+
+
+## Focused Studio workbench (Alpha 0.3.3)
+
+The single-screen interface now has four independently selected operations:
+
+- **Convert:** JPG, PNG, and WebP format conversion.
+- **Optimize:** adjust quality or lossless compression in the source format.
+- **Resize:** proportional downscaling with source format preserved.
+- **Inspect:** source size, dimensions, alpha channel, and ICC profile information.
+
+Only one operation is active at a time. Settings stay in a stable contextual strip above the image canvas, while file previews and output actions are accessible without document scrolling. Batch processing, source/result comparison, per-image settings, ZIP export and dark/light themes remain available.
 
 ## Core v0.1
 
