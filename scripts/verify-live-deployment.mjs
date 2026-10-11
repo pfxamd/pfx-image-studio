@@ -52,12 +52,17 @@ for (let attempt = 1; attempt <= 30; attempt++) {
       const response = await fetchFresh(url);
       const body = await response.text();
       if (body.length < 100) throw new Error('Suspiciously small published asset: ' + asset);
-      if (asset.endsWith('.js') && !body.includes(expectedVersion)) {
-        throw new Error('Published JS does not contain expected release version');
-      }
+    }
+    const diagnosticsUrl = new URL('diagnostics/', site);
+    diagnosticsUrl.searchParams.set('verify', expectedCommit);
+    const diagnosticsHtml = await (await fetchFresh(diagnosticsUrl)).text();
+    if (!diagnosticsHtml.includes('id="start"') ||
+        !diagnosticsHtml.includes('Image processing diagnostic') ||
+        !diagnosticsHtml.includes('/assets/')) {
+      throw new Error('Diagnostic page or its compiled entry assets are missing');
     }
     verified = { version: manifest.version, commit: manifest.commit,
-      assets: assets.length, page: site.href };
+      assets: assets.length, diagnostics: true, page: site.href };
     break;
   } catch (error) {
     lastError = error;
