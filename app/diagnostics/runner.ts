@@ -1,6 +1,8 @@
 import { createImage3WorkerPool } from '../lib/createWorkerPool.js';
 import type { Image3WorkerPool } from '../../src/index.js';
 import { studioVersion } from '../release.js';
+import { FixtureProvider, type FixtureMode } from './fixtureProvider.js';
+import type { DiagnosticWorkerTiming, TimedConversionResult } from '../workers/diagnosticTiming.js';
 
 type HeapPerformance = Performance & {
   memory?: { usedJSHeapSize: number; jsHeapSizeLimit: number };
@@ -23,6 +25,26 @@ export interface FrameObservation {
   readonly gapsAbove50ms: number;
 }
 
+export type StageMedians = Partial<Record<keyof DiagnosticWorkerTiming, number>>;
+
+function stageMedian(values: readonly DiagnosticWorkerTiming[]): StageMedians {
+  const keys: (keyof DiagnosticWorkerTiming)[] = [
+    'workerElapsedMs', 'inputReadInspectMs', 'bitmapDecodeMs',
+    'pixelExtractionMs', 'resampleMs', 'codecDecodeMs', 'codecEncodeMs'
+  ];
+  const summary: Partial<Record<keyof DiagnosticWorkerTiming, number>> = {};
+  for (const key of keys) {
+    const times = values.flatMap(value => typeof value[key] === 'number' ? [value[key]!] : []);
+    if (times.length > 0) summary[key] = round(median(times));
+  }
+  return summary;
+}
+
+function requireTiming(result: TimedConversionResult): DiagnosticWorkerTiming {
+  if (!result.diagnosticTiming) throw new Error('Worker did not return stage timing data');
+  return result.diagnosticTiming;
+}
+
 export interface DiagnosticCase {
   readonly label: string;
   readonly phase: PhaseName;
@@ -30,6 +52,9 @@ export interface DiagnosticCase {
   readonly target: string;
   readonly repetitions: number;
   readonly timingsMs: readonly number[];
+  readonly stageMediansMs: StageMedians;
+  /** Includes worker startup, transfer, Image3 preflight and scheduler; not pure main-thread CPU. */
+  readonly outsideWorkerMedianMs: number;
   readonly totalMs: number;
   readonly medianMs: number;
   readonly p90Ms: number;
@@ -45,7 +70,7 @@ export interface DiagnosticCase {
 }
 
 export interface PhoneDiagnosticReport {
-  readonly schemaVersion: 2;
+  readonly schemaVersion: 3;
   readonly product: 'PFx Image Studio';
   readonly release: string;
   readonly createdAt: string;
@@ -63,6 +88,11 @@ export interface PhoneDiagnosticReport {
     readonly afterMiB: number | null;
     readonly maxObservedMiB: number | null;
     readonly warning: string;
+  };
+  readonly fixturePreparation: {
+    readonly mode: FixtureMode;
+    readonly elapsedMs: number;
+    readonly responsiveness: FrameObservation;
   };
   readonly startup: {
     readonly workerPoolConstructionMs: number;
@@ -176,36 +206,6 @@ function frameMonitor(onMemory: (value: number) => void) {
   };
 }
 
-async function fixture(width: number, height: number, signal: AbortSignal, variant = 0): Promise<Blob> {
-  checkStopped(signal);
-  const canvas = document.createElement('canvas');
-  canvas.width = width;
-  canvas.height = height;
-  const ctx = canvas.getContext('2d', { alpha: false });
-  if (!ctx) throw new Error('The browser cannot create a 2D canvas.');
-  const gradient = ctx.createLinearGradient(0, 0, width, height);
-  gradient.addColorStop(0, '#254c92');
-  gradient.addColorStop(0.5, '#b46a97');
-  gradient.addColorStop(1, '#e9a848');
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, width, height);
-  ctx.strokeStyle = 'rgba(255,255,255,.65)';
-  ctx.lineWidth = 2;
-  for (let x = 24 + variant * 3; x < width; x += 31) {
-    ctx.beginPath();
-    ctx.moveTo(x, 20);
-    ctx.lineTo(x + 9, height - 20);
-    ctx.stroke();
-  }
-  const blob = await new Promise<Blob>((resolve, reject) => {
-    canvas.toBlob(value => value ? resolve(value) :
-      reject(new Error('PNG fixture encoding failed')), 'image/png');
-  });
-  canvas.width = 1;
-  canvas.height = 1;
-  checkStopped(signal);
-  return blob;
-}
 
 function estimatedBuffers(spec: CaseSpec): number | null {
   if (spec.maxWidth === null) return null;
@@ -224,9 +224,12 @@ async function measureCase(
   signal: AbortSignal,
   frames: ReturnType<typeof frameMonitor>,
   progress: (description: string) => void,
-  onComplete: () => void
+  onComplete: () => void,
+  prepare: (width: number, height: number, variant?: number) => Promise<Blob>
 ): Promise<DiagnosticCase> {
   const times: number[] = [];
+  const stages: DiagnosticWorkerTiming[] = [];
+  const outsideWorker: number[] = [];
   let outputBytes = 0;
   let outputW = 0;
   let outputH = 0;
@@ -235,13 +238,14 @@ async function measureCase(
     checkStopped(signal);
     progress(spec.label + ' · ' + (i + 1) + '/' + spec.repeats);
     const input = spec.phase === 'stress' && i > 0
-      ? await fixture(spec.width, spec.height, signal, i)
+      ? await prepare(spec.width, spec.height, i)
       : source;
+    frames.phase(spec.phase);
     const start = performance.now();
     const output = await pool.convert(
       { data: input, name: 'diagnostic.png', mimeType: 'image/png' },
       {
-        format: 'webp', quality: 82,
+        format: 'webp', quality: 82, diagnosticTiming: true,
         ...(spec.maxWidth === null ? {} : { rasterMaxWidth: spec.maxWidth })
       },
       { signal }
@@ -255,7 +259,11 @@ async function measureCase(
     if (output.width !== expectedW || output.height !== expectedH) {
       throw new Error('Output dimensions mismatch for ' + spec.label);
     }
-    times.push(performance.now() - start);
+    const elapsed = performance.now() - start;
+    const timing = requireTiming(output as TimedConversionResult);
+    stages.push(timing);
+    outsideWorker.push(Math.max(0, elapsed - timing.workerElapsedMs));
+    times.push(elapsed);
     outputBytes = output.outputBytes;
     outputW = output.width;
     outputH = output.height;
@@ -272,6 +280,8 @@ async function measureCase(
     target: outputW + 'x' + outputH,
     repetitions: spec.repeats,
     timingsMs: times.map(ms => round(ms)),
+    stageMediansMs: stageMedian(stages),
+    outsideWorkerMedianMs: round(median(outsideWorker)),
     totalMs: round(sum),
     medianMs: round(median(times)),
     p90Ms: round(percentile(times, 0.9)),
@@ -306,6 +316,14 @@ export async function runPhoneDiagnostics(
     maxObservedMiB = Math.max(maxObservedMiB ?? 0, current);
   });
   const cases: DiagnosticCase[] = [];
+  const provider = new FixtureProvider();
+  let preparationMs = 0;
+  const prepare = async (width: number, height: number, variant = 0): Promise<Blob> => {
+    frames.phase('setup');
+    const begin = performance.now();
+    try { return await provider.make(width, height, signal, variant); }
+    finally { preparationMs += performance.now() - begin; frames.phase(null); }
+  };
   let completed = 0;
   const progress = (label: string) => onProgress(completed, DIAGNOSTIC_OPERATIONS, label);
   const onComplete = () => {
@@ -318,7 +336,7 @@ export async function runPhoneDiagnostics(
   document.addEventListener('visibilitychange', detectHidden);
   try {
     progress('Preparing original conversion');
-    const firstFixture = await fixture(1280, 800, signal);
+    const firstFixture = await prepare(1280, 800);
     checkStopped(signal);
     const constructionStart = performance.now();
     pool = createImage3WorkerPool();
@@ -334,9 +352,10 @@ export async function runPhoneDiagnostics(
     const coldStart = performance.now();
     const output = await pool.convert(
       { data: firstFixture, name: 'diagnostic.png', mimeType: 'image/png' },
-      { format: 'webp', quality: 82 }, { signal }
+      { format: 'webp', quality: 82, diagnosticTiming: true }, { signal }
     );
     const firstConversionMs = performance.now() - coldStart;
+    const coldTiming = requireTiming(output as TimedConversionResult);
     const bytes = new Uint8Array(output.buffer);
     if (bytes.length < 16 || String.fromCharCode(...bytes.subarray(8, 12)) !== 'WEBP' ||
         output.width !== 1280 || output.height !== 800) {
@@ -347,6 +366,8 @@ export async function runPhoneDiagnostics(
     cases.push({
       label: cold.label, phase: 'cold', source: '1280x800', target: '1280x800',
       repetitions: 1, timingsMs: [round(firstConversionMs)],
+      stageMediansMs: stageMedian([coldTiming]),
+      outsideWorkerMedianMs: round(Math.max(0, firstConversionMs - coldTiming.workerElapsedMs)),
       totalMs: round(firstConversionMs), medianMs: round(firstConversionMs),
       p90Ms: round(firstConversionMs), meanMs: round(firstConversionMs),
       maxMs: round(firstConversionMs), firstMs: round(firstConversionMs),
@@ -360,8 +381,8 @@ export async function runPhoneDiagnostics(
       if (hiddenDuringRun) throw new Error('Test became hidden. Keep the browser in the foreground.');
       progress('Preparing ' + spec.label);
       const source = spec.phase === 'warm' ? firstFixture :
-        await fixture(spec.width, spec.height, signal);
-      cases.push(await measureCase(pool, spec, source, signal, frames, progress, onComplete));
+        await prepare(spec.width, spec.height);
+      cases.push(await measureCase(pool, spec, source, signal, frames, progress, onComplete, prepare));
     }
     if (hiddenDuringRun) throw new Error('Test became hidden. Keep the browser in the foreground.');
     checkStopped(signal);
@@ -370,11 +391,11 @@ export async function runPhoneDiagnostics(
     if (afterMiB !== null) maxObservedMiB = Math.max(maxObservedMiB ?? 0, afterMiB);
     const deviceMemory = (navigator as NavigatorDevice).deviceMemory;
     return {
-      schemaVersion: 2,
+      schemaVersion: 3,
       product: 'PFx Image Studio',
       release: studioVersion,
       createdAt: startedAt,
-      note: 'Synthetic image tests in actual Studio workers. 31 conversions including first-use effects; no upload. First conversion time is not solely WASM initialization. No peak native/browser RAM reading.',
+      note: '31 actual worker conversions, observed stage times and independently generated synthetic fixtures. Outside-worker time includes queue, preflight and messages; it is not CPU time. No peak physical memory measurement or image upload.',
       platform: {
         browser: browserLabel(), screenCssPixels: screen.width + 'x' + screen.height,
         devicePixelRatio: round(devicePixelRatio, 2),
@@ -385,6 +406,10 @@ export async function runPhoneDiagnostics(
         kind: afterMiB === null ? 'unavailable' : 'js-heap-estimate-only',
         beforeMiB, afterMiB, maxObservedMiB,
         warning: 'JS heap is not total device memory or browser peak memory. Estimated pixel buffers exclude Canvas, decoder, codecs and caches.'
+      },
+      fixturePreparation: {
+        mode: provider.mode, elapsedMs: round(preparationMs),
+        responsiveness: frames.phaseResults('setup')
       },
       startup: {
         workerPoolConstructionMs: constructionMs,
@@ -402,5 +427,6 @@ export async function runPhoneDiagnostics(
     document.removeEventListener('visibilitychange', detectHidden);
     frames.stop();
     pool?.terminate();
+    provider.close();
   }
 }
