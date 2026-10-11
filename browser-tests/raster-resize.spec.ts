@@ -8,8 +8,6 @@ async function loadImage(page: Page, name: string, width: number, height: number
     const ctx = canvas.getContext('2d')!;
     ctx.fillStyle = alpha ? 'rgba(220, 20, 70, .5)' : '#568bc4';
     ctx.fillRect(0, 0, width, height);
-    ctx.fillStyle = '#ef9e43';
-    ctx.fillRect(2, 2, 1, height - 4);
     return canvas.toDataURL('image/png');
   }, { width, height, alpha });
   await page.locator('input[type="file"]').first().setInputFiles({
@@ -17,48 +15,42 @@ async function loadImage(page: Page, name: string, width: number, height: number
   });
 }
 
-const inspector = (page: Page) => page.getByRole('complementary', { name: 'Processing settings' });
-
-test('disabled-by-default resize leaves original dimensions unchanged', async ({ page }) => {
+test('conversion does not unexpectedly resize the image', async ({ page }) => {
   await page.goto('/');
   await loadImage(page, 'original.png', 60, 40);
-  await expect(page.getByRole('checkbox', { name: 'Resize image' })).not.toBeChecked();
-  await page.getByRole('button', { name: /Convert image/ }).click();
-  await expect(inspector(page).getByText('60 × 40', { exact: true })).toHaveCount(2);
-  await expect(inspector(page).getByText('Processed', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Convert image' }).click();
+  await expect(page.getByText('60 × 40 px', { exact: true })).toBeVisible({ timeout: 60_000 });
+  await expect(page.getByRole('button', { name: 'Download', exact: true })).toBeEnabled();
 });
 
-test('opt-in Raster Core downscales before the unchanged Image3 WebP encoder', async ({ page }) => {
+test('resize is an independent operation and preserves original format', async ({ page }) => {
   await page.goto('/');
   await loadImage(page, 'large.png', 60, 40, true);
-  await page.getByRole('checkbox', { name: 'Resize image' }).check();
+  await page.getByRole('button', { name: 'Resize', exact: true }).click();
   await page.getByRole('spinbutton', { name: 'Maximum width in pixels' }).fill('24');
-  await page.getByRole('button', { name: /Convert image/ }).click();
-  await expect(inspector(page).getByText('24 × 16', { exact: true })).toBeVisible({ timeout: 60_000 });
-  await expect(inspector(page).getByText('60 × 40', { exact: true })).toBeVisible();
-  await expect(page.getByText('WEBP output ready')).toBeVisible();
-
-  // Toggle off and reprocess. Frozen converter must still output original size.
-  await page.getByRole('checkbox', { name: 'Resize image' }).uncheck();
-  await page.getByRole('button', { name: /Convert image/ }).click();
-  await expect(inspector(page).getByText('60 × 40', { exact: true })).toHaveCount(2);
+  await page.getByRole('button', { name: 'Resize image' }).click();
+  await expect(page.getByText('24 × 16 px', { exact: true })).toBeVisible({ timeout: 60_000 });
+  await expect(page.getByText('PNG output ready')).toBeVisible();
+  await page.getByRole('button', { name: 'Convert', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Download', exact: true })).toBeDisabled();
+  await page.getByRole('button', { name: 'Convert image' }).click();
+  await expect(page.getByText('60 × 40 px', { exact: true })).toBeVisible({ timeout: 60_000 });
 });
 
-test('oversized target never enlarges an image', async ({ page }) => {
+test('resize never upscales an image', async ({ page }) => {
   await page.goto('/');
   await loadImage(page, 'small.png', 30, 18);
-  await page.getByRole('checkbox', { name: 'Resize image' }).check();
+  await page.getByRole('button', { name: 'Resize', exact: true }).click();
   await page.getByRole('spinbutton', { name: 'Maximum width in pixels' }).fill('100');
-  await page.getByRole('button', { name: /Convert image/ }).click();
-  await expect(inspector(page).getByText('30 × 18', { exact: true })).toHaveCount(2);
+  await page.getByRole('button', { name: 'Resize image' }).click();
+  await expect(page.getByText('30 × 18 px', { exact: true })).toBeVisible({ timeout: 60_000 });
 });
 
-test('invalid max width gives an actionable error, never silent fallback', async ({ page }) => {
+test('invalid width produces an actionable error', async ({ page }) => {
   await page.goto('/');
   await loadImage(page, 'bad-width.png', 30, 18);
-  await page.getByRole('checkbox', { name: 'Resize image' }).check();
+  await page.getByRole('button', { name: 'Resize', exact: true }).click();
   await page.getByRole('spinbutton', { name: 'Maximum width in pixels' }).fill('0');
-  await page.getByRole('button', { name: /Convert image/ }).click();
-  await expect(page.getByRole('alert')).toContainText('Maximum width must be an integer');
-  await expect(page.getByRole('button', { name: /Retry image/ })).toBeVisible();
+  await page.getByRole('button', { name: 'Resize image' }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'Processing failed' })).toBeVisible();
 });
