@@ -9,6 +9,7 @@ permissions:
   contents: read
   pages: write
   id-token: write
+  statuses: write
 
 concurrency:
   group: pages
@@ -82,3 +83,22 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Verify real conversion against published Pages website
         run: node scripts/verify-live-browser.mjs
+
+      - name: Report verified live commit status to GitHub
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERIFY_JOB_STATUS: ${{ job.status }}
+        run: |
+          if [ "$VERIFY_JOB_STATUS" = "success" ]; then
+            STATE=success
+            DESCRIPTION="Published Studio commit and browser conversion verified"
+          else
+            STATE=failure
+            DESCRIPTION="Published Studio verification failed or was incomplete"
+          fi
+          gh api "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" -X POST \
+            -f state="$STATE" \
+            -f context="pages/live-verified" \
+            -f description="$DESCRIPTION" \
+            -f target_url="https://pfxamd.github.io/pfx-image-studio/"
