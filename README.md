@@ -2,7 +2,7 @@
 
 Live app: https://pfxamd.github.io/pfx-image-studio/
 
-**App release:** Alpha 0.2.7. The browser interface release is independent of the frozen conversion core (`0.1.0`). The navbar badge reads from `app/release.ts`. Increase `studioVersion` with every change; CI and the Pages deployment workflow reject updates without a version increase.
+**App release:** Alpha 0.2.8. The browser interface release is independent of the frozen conversion core (`0.1.0`). The navbar badge reads from `app/release.ts`. Increase `studioVersion` with every change; CI and the Pages deployment workflow reject updates without a version increase.
 
 Browser-first image conversion core for **JPG, PNG and WEBP**.
 
@@ -181,6 +181,26 @@ Chromium. Stress cancellation/retry remains covered by the existing tests.
 **Limits:** Browser emulation is not measurement on a physical smartphone.
 The release manifest attests source identity but is not a cryptographic
 supply-chain signature. No private user photographs are deployed.
+
+## On-device diagnostics (Alpha 0.2.8)
+
+Open the separate diagnostic page: `/diagnostics/`. It is not added to the
+main tool's settings or conversion workflow.
+
+The user explicitly starts the test. The page generates deterministic synthetic
+PNG images **locally**, then uses the same Studio worker pool, Raster Core
+downscaler and Image3 WebP encoder as the actual application. It measures
+one unchanged-size conversion, two downscales and a sequential 10-image
+resize+encode batch. It reports elapsed times, output dimensions/format,
+requestAnimationFrame activity and supported JS heap readings, and offers
+Copy report / Save report buttons for voluntary manual sharing.
+
+The diagnostics page has no network telemetry and **does not upload test
+images or reports**. The resulting report is not a peak physical RAM, GPU or
+native decoder memory reading. `performance.memory` may be missing or
+limited, and mobile browser backgrounding affects frame measurements.
+The test is intended for an actual foreground phone browser; the CI mobile
+project remains only a desktop-based emulator.
 
 ## Application foundation
 

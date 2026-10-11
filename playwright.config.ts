@@ -18,7 +18,7 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium-mobile',
-      testMatch: /(resize-stress|release-acceptance)\.spec\.ts/,
+      testMatch: /(resize-stress|release-acceptance|device-diagnostics)\.spec\.ts/,
       use: { ...devices['Pixel 7'], browserName: 'chromium' },
     },
     {
