@@ -115,6 +115,28 @@ export function ProcessingPanel({
         </fieldset>
       )}
 
+      <fieldset className={styles.settingsSection} disabled={disabled}>
+        <legend>Resize</legend>
+        <label className={styles.switchRow}>
+          <span><strong>Downscale image</strong><small>Keep proportions · no cropping</small></span>
+          <input type="checkbox" aria-label="Resize image" checked={settings.resizeEnabled}
+            onChange={(event) => onSettings({ resizeEnabled: event.target.checked })} />
+        </label>
+        {settings.resizeEnabled && (
+          <div className={styles.resizeField}>
+            <label htmlFor="studio-resize-width">Maximum width</label>
+            <input id="studio-resize-width" aria-label="Maximum width in pixels"
+              type="number" inputMode="numeric" min={1} max={8192} step={1}
+              value={settings.resizeMaxWidth}
+              onChange={(event) => onSettings({ resizeMaxWidth: Number(event.target.value) })} />
+            <span>px</span>
+          </div>
+        )}
+        {settings.resizeEnabled && (
+          <p className={styles.helper}>Browser resize uses sRGB; embedded ICC profiles are not retained.</p>
+        )}
+      </fieldset>
+
       <section className={styles.resultSection} aria-label="Conversion result">
         <div className={styles.resultHeading}>
           <h3>File details</h3>
