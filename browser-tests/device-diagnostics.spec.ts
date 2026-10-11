@@ -6,15 +6,15 @@ test('device diagnostic uses actual workers and exports a truthful local report'
   page.on('pageerror', error => errors.push(error.message));
   await page.goto('/diagnostics/');
   await expect(page.getByRole('heading', {name:'Image processing diagnostic'})).toBeVisible();
-  await expect(page.locator('#version')).toContainText('Alpha 0.2.9');
+  await expect(page.locator('#version')).toContainText('Alpha 0.3.0');
   await page.getByRole('button', {name:'Run diagnostic'}).click();
   await expect(page.locator('#badge')).toHaveText('Completed', {timeout:110_000});
   await expect(page.locator('#counter')).toHaveText('31/31');
   const json = await page.locator('#report').innerText();
   const report = JSON.parse(json);
   expect(report.result).toBe('passed');
-  expect(report.release).toBe('0.2.9');
-  expect(report.schemaVersion).toBe(2);
+  expect(report.release).toBe('0.3.0');
+  expect(report.schemaVersion).toBe(3);
   expect(report.cases).toHaveLength(6);
   expect(report.cases.map((entry: {repetitions:number}) => entry.repetitions))
     .toEqual([1, 5, 5, 5, 5, 10]);
@@ -31,6 +31,16 @@ test('device diagnostic uses actual workers and exports a truthful local report'
   expect(report.startup.warmedConversionMedianMs).toBeGreaterThan(0);
   expect(report.startup.firstToWarmRatio).toBeGreaterThan(0);
   expect(report.memory.warning).toContain('not total device memory');
+  expect(['offscreen-worker','main-thread-fallback']).toContain(report.fixturePreparation.mode);
+  expect(report.fixturePreparation.elapsedMs).toBeGreaterThan(0);
+  expect(report.fixturePreparation.responsiveness.gapsAbove50ms).toBeGreaterThanOrEqual(0);
+  expect(report.cases[0].stageMediansMs.codecDecodeMs).toBeGreaterThan(0);
+  expect(report.cases[0].stageMediansMs.codecEncodeMs).toBeGreaterThan(0);
+  expect(report.cases[1].stageMediansMs.codecDecodeMs).toBeGreaterThan(0);
+  expect(report.cases[2].stageMediansMs.bitmapDecodeMs).toBeGreaterThanOrEqual(0);
+  expect(report.cases[2].stageMediansMs.pixelExtractionMs).toBeGreaterThanOrEqual(0);
+  expect(report.cases[2].stageMediansMs.resampleMs).toBeGreaterThan(0);
+  expect(report.cases[2].stageMediansMs.codecEncodeMs).toBeGreaterThan(0);
   for (const result of report.cases) {
     expect(result.totalMs).toBeGreaterThan(0);
     expect(result.outputBytes).toBeGreaterThan(0);
@@ -38,11 +48,15 @@ test('device diagnostic uses actual workers and exports a truthful local report'
     expect(result.timingsMs).toHaveLength(result.repetitions);
     expect(result.medianMs).toBeGreaterThan(0);
     expect(result.p90Ms).toBeGreaterThanOrEqual(result.medianMs);
+    expect(result.stageMediansMs.workerElapsedMs).toBeGreaterThan(0);
+    expect(result.outsideWorkerMedianMs).toBeGreaterThanOrEqual(0);
     expect(result.responsiveness.gapsAbove50ms).toBeGreaterThanOrEqual(0);
   }
   expect(report.totalElapsedMs).toBeGreaterThan(0);
   expect(report.responsiveness.animationFrames).toBeGreaterThan(0);
   await expect(page.getByText('Warmed median')).toBeVisible();
+  await expect(page.getByText('Fixture preparation', { exact: true })).toBeVisible();
+  await expect(page.getByText('Lanczos')).toBeVisible();
   await expect(page.getByText('UI gaps >50ms')).toBeVisible();
   await expect(page.getByRole('button', {name:'Copy report'})).toBeEnabled();
   await expect(page.getByRole('button', {name:'Save report'})).toBeEnabled();

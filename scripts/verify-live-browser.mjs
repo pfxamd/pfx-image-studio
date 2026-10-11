@@ -60,11 +60,15 @@ try {
   const report = JSON.parse(await page.locator('#report').innerText());
   assert.equal(report.result, 'passed');
   assert.equal(report.release, version);
-  assert.equal(report.schemaVersion, 2);
+  assert.equal(report.schemaVersion, 3);
   assert.equal(report.cases.length, 6);
   assert.deepEqual(report.cases.map(entry => entry.repetitions), [1,5,5,5,5,10]);
   assert.ok(report.startup.firstConversionMs > 0);
   assert.ok(report.startup.warmedConversionMedianMs > 0);
+  assert.ok(report.fixturePreparation.elapsedMs > 0);
+  assert.ok(report.cases[0].stageMediansMs.codecDecodeMs > 0);
+  assert.ok(report.cases[2].stageMediansMs.resampleMs > 0);
+  assert.ok(report.cases[2].stageMediansMs.codecEncodeMs > 0);
   assert.deepEqual(errors, []);
   console.log('PUBLIC_DEVICE_DIAGNOSTICS_VERIFIED', JSON.stringify({
     page:diagnosticUrl, release:version, samples:31, elapsedMs:report.totalElapsedMs
