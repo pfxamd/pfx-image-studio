@@ -2,7 +2,7 @@
 
 Live app: https://pfxamd.github.io/pfx-image-studio/
 
-**App release:** Alpha 0.2.9. The browser interface release is independent of the frozen conversion core (`0.1.0`). The navbar badge reads from `app/release.ts`. Increase `studioVersion` with every change; CI and the Pages deployment workflow reject updates without a version increase.
+**App release:** Alpha 0.3.0. The browser interface release is independent of the frozen conversion core (`0.1.0`). The navbar badge reads from `app/release.ts`. Increase `studioVersion` with every change; CI and the Pages deployment workflow reject updates without a version increase.
 
 Browser-first image conversion core for **JPG, PNG and WEBP**.
 
@@ -218,6 +218,30 @@ it may include worker creation, lazy codec loading, decoding and encoding.
 Synthetic images are not a photo-quality test. Browser-provided JS heap is
 not peak device RAM and is often unavailable on Firefox. Avoid comparing
 numbers from different device temperatures or browser states as benchmarks.
+
+## Worker stage profiler and UI responsiveness (Alpha 0.3.0)
+
+The opt-in /diagnostics/ benchmark uses the same production Studio worker.
+A diagnostic-only flag adds timings for the existing Image3 decoder and encoder
+(including cold lazy imports), and Raster Core 0.5.0-alpha.5 reports exact
+native-bitmap decode, 8-bit RGBA extraction and Lanczos3 filtering times.
+Normal conversions do not create a timing registry or report these fields.
+No changes to codecs, resize algorithm or existing settings.
+
+Diagnostic fixture creation now uses a dedicated OffscreenCanvas worker where
+supported. Browsers without this capability fall back to the previous
+main-thread Canvas path, which is **explicitly shown in the report**. A
+preparation-phase UI-frame-gap count distinguishes fixture generation from
+image conversion. The 'outside worker' figure includes input preflight,
+scheduling, module startup and message/transfer time; it is NOT direct
+main-thread CPU utilization.
+
+The report still measures 31 operations (cold first, 5 warmed, 5 medium,
+5 large, 5 large-image stress and 10-image batch), now with stage medians,
+cold-codec cost and per-phase responsiveness. The benchmark runs locally
+on the user's device, no uploads. Time measurements alone cannot identify
+the exact cause of operating-system scheduling or GPU frame gaps. Firefox
+mobile does not expose reliable process peak RAM via the Web Performance API.
 
 ## Application foundation
 
