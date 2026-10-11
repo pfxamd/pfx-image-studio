@@ -12,6 +12,7 @@ import {
 import { createImage3WorkerPool } from '../../lib/createWorkerPool.js';
 import { downloadResult, downloadResults } from '../../lib/download.js';
 import { validateResizeWidth } from '../../lib/resizeSettings.js';
+import { ResizePermitQueue } from '../../lib/resizePermitQueue.js';
 import { partitionImageFiles } from './files.js';
 import { workspaceReducer } from './reducer.js';
 import {
@@ -28,6 +29,7 @@ export function useImageWorkspace() {
   );
   const poolRef = useRef<Image3WorkerPool | null>(null);
   const controllers = useRef(new Map<string, AbortController>());
+  const resizePermits = useRef(new ResizePermitQueue());
   const stateRef = useRef(state);
 
   useEffect(() => {
@@ -112,7 +114,7 @@ export function useImageWorkspace() {
   const convertItem = useCallback(
     async (id: string): Promise<ConversionResult | undefined> => {
       const item = stateRef.current.items.find((candidate) => candidate.id === id);
-      if (!item || item.status === 'converting') return undefined;
+      if (!item || item.status === 'converting' || controllers.current.has(id)) return undefined;
 
       const pool = poolRef.current;
       if (!pool) return undefined;
@@ -127,8 +129,14 @@ export function useImageWorkspace() {
         ...(itemSettings.resizeEnabled ? { rasterMaxWidth: itemSettings.resizeMaxWidth } : {}),
       };
 
+      let releaseResize: (() => void) | undefined;
       try {
-        if (itemSettings.resizeEnabled) validateResizeWidth(itemSettings.resizeMaxWidth);
+        if (itemSettings.resizeEnabled) {
+          validateResizeWidth(itemSettings.resizeMaxWidth);
+          // Large Canvas RGBA buffers are outside Image3's codec memory estimate.
+          // Keep only one resizing job live; cancelled queued jobs exit promptly.
+          releaseResize = await resizePermits.current.acquire(controller.signal);
+        }
         let attempt = 0;
 
         while (attempt < 2) {
@@ -185,6 +193,7 @@ export function useImageWorkspace() {
           error: getErrorMessage(error),
         });
       } finally {
+        releaseResize?.();
         controllers.current.delete(id);
       }
 
