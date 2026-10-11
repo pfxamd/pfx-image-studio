@@ -125,6 +125,10 @@ stop.addEventListener('click', () => {
 
 copy.addEventListener('click', () => {
   if (!reportText) return;
+  if (!navigator.clipboard?.writeText) {
+    status.textContent = 'Clipboard unavailable. Use Save report.';
+    return;
+  }
   void navigator.clipboard.writeText(reportText).then(() => {
     status.textContent = 'Report copied. Paste it into the chat.';
   }).catch(() => {
