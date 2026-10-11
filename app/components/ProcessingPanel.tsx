@@ -1,6 +1,7 @@
 import type { ImageFormat } from '../../src/index.js';
 import type { WorkspaceItem, WorkspaceSettings } from '../features/workspace/types.js';
 import { formatBytes, formatSavings } from '../lib/format.js';
+import { useRasterInspection } from '../features/workspace/useRasterInspection.js';
 import styles from '../App.module.css';
 
 export type SettingsScope = 'all' | 'selected';
@@ -34,6 +35,9 @@ export function ProcessingPanel({
   const disabled = activeCount > 0 || !selected;
   const format = settings.format;
   const result = selected?.result;
+  const inspection = useRasterInspection(selected?.file);
+  const inspected = inspection.status === 'ready' ? inspection.info : undefined;
+  const inspecting = inspection.status === 'loading' ? 'Inspecting…' : '—';
   const selectedBusy = selected?.status === 'converting';
   return (
     <aside className={styles.inspector} aria-label="Processing settings">
@@ -118,6 +122,13 @@ export function ProcessingPanel({
         </div>
         <dl className={styles.metrics}>
           <div><dt>Original</dt><dd>{selected ? formatBytes(selected.file.size) : '—'}</dd></div>
+          {selected && (
+            <>
+              <div><dt>Source dimensions</dt><dd>{inspected ? `${inspected.width} × ${inspected.height}` : inspecting}</dd></div>
+              <div><dt>Transparency</dt><dd>{inspected ? (inspected.hasAlpha ? 'Yes' : 'No') : inspecting}</dd></div>
+              <div><dt>ICC profile</dt><dd>{inspected ? (inspected.hasIccProfile ? 'Embedded' : 'None detected') : inspecting}</dd></div>
+            </>
+          )}
           <div><dt>Output</dt><dd>{result ? formatBytes(result.outputBytes) : '—'}</dd></div>
           <div><dt>Difference</dt><dd>{result ? formatSavings(result.inputBytes, result.outputBytes) : '—'}</dd></div>
           <div><dt>Dimensions</dt><dd>{result ? String(result.width) + ' × ' + String(result.height) : '—'}</dd></div>

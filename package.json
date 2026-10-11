@@ -39,7 +39,8 @@
     "@jsquash/webp": "1.5.0",
     "motion": "13.5.0",
     "react": "19.3.0",
-    "react-dom": "19.3.0"
+    "react-dom": "19.3.0",
+    "@pfxamd/raster-core": "github:pfxamd/pfx-raster-core#c32f733fe1f2abe9fc7e16ce5e545a67c6b177c5"
   },
   "devDependencies": {
     "@playwright/test": "1.63.0",
