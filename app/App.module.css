@@ -907,3 +907,16 @@
 .resizeField input:focus-visible {
   outline: 2px solid var(--studio-blue); outline-offset: 1px;
 }
+
+
+/* Alpha 0.2.6: mobile inspector controls must never sit beneath sticky
+   header/actions. Keep the entire settings panel scrollable and tappable. */
+@media (max-width: 720px) {
+  .inspectorHead,
+  .inspectorActions {
+    position: static;
+  }
+  .inspector {
+    scroll-padding-block: 8px;
+  }
+}
