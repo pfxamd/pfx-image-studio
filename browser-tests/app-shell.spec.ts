@@ -30,24 +30,22 @@ test('image workspace keeps the real conversion, preview, comparison and downloa
   await page.goto('/');
   await expect(page).toHaveTitle('PFx Image Studio');
   await expect(page.getByText(/^Alpha \d+\.\d+(?:\.\d+)?$/)).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Your image workspace' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Image workspace' })).toBeVisible();
   await addImages(page, 1);
-  await expect(page.getByRole('heading', { name: 'Image preview' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Select image fixture-1.png' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Preview' })).toBeVisible();
   await expect(page.getByRole('img', { name: 'Original: fixture-1.png' })).toBeVisible();
   await page.getByRole('button', { name: /Convert image/ }).click();
   await expect(page.getByRole('button', { name: 'Compare' })).toBeEnabled({ timeout: 60_000 });
   await expect(page.getByRole('slider', { name: 'Compare original and processed images' })).toBeVisible();
   await expect(page.getByRole('img', { name: 'Processed: fixture-1.png' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Download image' })).toBeEnabled();
-  await expect(page.getByRole('button', { name: 'Download ZIP' })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Download', exact: true })).toBeEnabled();
   expect(errors).toEqual([]);
 });
 
 test('editing selected image settings preserves other completed image results', async ({ page }) => {
   await page.goto('/');
   await addImages(page, 2);
-  await page.getByRole('button', { name: 'Convert all remaining' }).click();
+  await page.getByRole('button', { name: 'Process all' }).click();
   await expect(page.getByRole('button', { name: 'Download ZIP' })).toBeEnabled({ timeout: 60_000 });
   await page.getByRole('button', { name: 'Select image fixture-2.png' }).click();
   await page.getByRole('button', { name: 'Selected', exact: true }).click();

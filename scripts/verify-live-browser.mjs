@@ -34,17 +34,31 @@ try {
     name: 'public-smoke.png', mimeType: 'image/png',
     buffer: Buffer.from(dataURL.split(',')[1], 'base64')
   });
-  await page.getByRole('checkbox', { name: 'Resize image' }).check();
-  await page.getByRole('spinbutton', { name: 'Maximum width in pixels' }).fill('80');
-  await page.getByRole('button', { name: /Convert image/ }).click();
-  await page.getByRole('complementary', {name:'Processing settings'})
-    .getByText('80 × 56', {exact:true}).waitFor({state:'visible',timeout:45000});
+  await page.getByRole('button', {name:'Resize',exact:true}).click();
+  await page.getByRole('spinbutton', {name:'Maximum width in pixels'}).fill('80');
+  await page.getByRole('button', {name:'Resize image'}).click();
+  await page.getByText('80 × 56 px', {exact:true}).waitFor({state:'visible',timeout:45000});
+  const resized = page.waitForEvent('download');
+  await page.getByRole('button', {name:'Download',exact:true}).click();
+  const resizedFile = await resized;
+  const resizedBytes = await readFile(await resizedFile.path());
+  assert.equal(resizedBytes.subarray(1,4).toString(), 'PNG',
+    'Resize should preserve the original PNG format');
+
+  await page.getByRole('button', {name:'Convert',exact:true}).click();
+  await page.getByRole('button', {name:'Convert image'}).click();
+  await page.getByRole('button', {name:'Download',exact:true}).waitFor({state:'attached',timeout:45000});
+  await page.getByRole('button', {name:'Download',exact:true}).waitFor({state:'visible',timeout:45000});
+  await page.waitForFunction(() => {
+    const button = Array.from(document.querySelectorAll('button')).find(b => b.textContent?.trim() === 'Download');
+    return button && !button.disabled;
+  }, {timeout:45000});
   const download = page.waitForEvent('download');
-  await page.getByRole('button', {name:'Download image'}).click();
+  await page.getByRole('button', {name:'Download',exact:true}).click();
   const file = await download;
   const bytes = await readFile(await file.path());
   assert.equal(bytes.toString('ascii', 8, 12), 'WEBP',
-    'Deployed converter did not produce valid WebP output');
+    'Converter did not produce valid WebP output');
   assert.deepEqual(errors, []);
   console.log('PUBLIC_BROWSER_CONVERSION_VERIFIED', JSON.stringify({
     page:site,version,dimensions:'80x56',format:'webp',bytes:bytes.length

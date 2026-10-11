@@ -7,6 +7,7 @@ function resetResult(item: WorkspaceItem): WorkspaceItem {
     stage: undefined,
     progress: 0,
     result: undefined,
+    resultOperation: undefined,
     error: undefined,
   };
 }
@@ -57,7 +58,7 @@ export function workspaceReducer(
     case 'success':
       return updateItem(state, action.id, {
         status: 'completed', progress: 1, stage: 'completed',
-        result: action.result, error: undefined,
+        result: action.result, resultOperation: action.operation, error: undefined,
       });
     case 'error':
       return updateItem(state, action.id, { status: 'error', error: action.error });

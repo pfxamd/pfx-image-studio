@@ -4,6 +4,7 @@ import type {
   ConversionStage,
   ImageFormat,
 } from '../../../src/index.js';
+import type { OperationId } from '../../operations/definitions.js';
 import { DEFAULT_MAX_WIDTH } from '../../lib/resizeSettings.js';
 
 export type WorkspaceItemStatus =
@@ -21,6 +22,7 @@ export interface WorkspaceItem {
   readonly stage: ConversionStage | undefined;
   readonly progress: number;
   readonly result: ConversionResult | undefined;
+  readonly resultOperation?: OperationId | undefined;
   readonly overrideSettings?: WorkspaceSettings | undefined;
   readonly error: string | undefined;
 }
@@ -60,6 +62,7 @@ export type WorkspaceAction =
       readonly type: 'success';
       readonly id: string;
       readonly result: ConversionResult;
+      readonly operation: OperationId;
     }
   | { readonly type: 'error'; readonly id: string; readonly error: string }
   | { readonly type: 'cancelled'; readonly id: string }

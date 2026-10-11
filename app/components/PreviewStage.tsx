@@ -95,8 +95,8 @@ export function PreviewStage({ selected, onFiles }: PreviewStageProps) {
       onDragOver={onStageDragOver} onDragLeave={onStageDragLeave} onDrop={onStageDrop}>
       <div className={styles.previewHead}>
         <div>
-          <span className={styles.eyebrow}>Workspace</span>
-          <h1>{selected ? 'Image preview' : 'Your image workspace'}</h1>
+          <span className={styles.eyebrow}>CANVAS / {selected ? 'ACTIVE IMAGE' : 'EMPTY WORKSPACE'}</span>
+          <h1>{selected ? 'Preview' : 'Image workspace'}</h1>
         </div>
         {selected && <span className={styles.previewFilename} title={selected.file.name}>{selected.file.name}</span>}
       </div>
@@ -118,6 +118,7 @@ export function PreviewStage({ selected, onFiles }: PreviewStageProps) {
               <button type="button" aria-label="Zoom in" disabled={zoom >= 3} onClick={() => changeZoom(zoom + 0.25)}>+</button>
             </div>
           </div>
+          {selected.status === 'error' && <p className={styles.previewError} role="alert">{selected.error ?? 'Could not process image.'}</p>}
           <div className={styles.previewCanvas} onPointerDown={onPointerDown}
             onPointerMove={onPointerMove} onPointerUp={onPointerUp}
             onPointerCancel={onPointerUp} style={{ touchAction: zoom > 1 ? 'none' : 'auto', cursor: zoom > 1 ? 'grab' : 'default' }}>
@@ -152,12 +153,12 @@ export function PreviewStage({ selected, onFiles }: PreviewStageProps) {
       ) : (
         <div className={styles.emptyPreview}>
           <div className={styles.emptyIntro}>
-            <span className={styles.emptyBadge}>JPG / PNG / WEBP</span>
-            <h2>Start with an image.</h2>
-            <p>Convert a single file or a batch. Everything is processed locally in your browser.</p>
+            <span className={styles.emptyBadge}>JPG  ·  PNG  ·  WEBP</span>
+            <h2>Bring your image.</h2>
+            <p>Drop a file onto the canvas, or choose one to begin.</p>
           </div>
           <DropZone onFiles={onFiles} />
-          <div className={styles.emptyFeatures}><span>Local processing</span><span>Batch conversion</span><span>Quality controls</span></div>
+          
         </div>
       )}
       {stageDragging && <div className={styles.stageDropOverlay} role="status">Drop images to add</div>}

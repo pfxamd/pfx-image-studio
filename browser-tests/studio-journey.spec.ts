@@ -41,14 +41,14 @@ test('single-file upload, format conversion, comparison, image export and visual
   await page.goto('/');
   await addFiles(page, [{ name: 'test-artwork.png', buffer: await createArtwork(page) }]);
   await expect(page.getByRole('img', { name: 'Original: test-artwork.png' })).toBeVisible();
-  const title = page.getByRole('heading', { name: 'Image preview' });
+  const title = page.getByRole('heading', { name: 'Preview' });
   await expect(title).toBeVisible();
   expect(await title.evaluate((heading) => heading.scrollWidth <= heading.clientWidth)).toBeTruthy();
 
   for (const [format, extension] of [['WEBP', '.webp'], ['PNG', '.png'], ['JPG', '.jpg']] as const) {
     await page.getByRole('button', { name: format, exact: true }).click();
-    await page.getByRole('button', { name: /^(Convert image|Reprocess image)/ }).click();
-    await expect(page.getByRole('button', { name: 'Download image' })).toBeEnabled({ timeout: 60_000 });
+    await page.getByRole('button', { name: 'Convert image' }).click();
+    await expect(page.getByRole('button', { name: 'Download', exact: true })).toBeEnabled({ timeout: 60_000 });
     await page.getByRole('button', { name: 'Compare', exact: true }).click();
     const slider = page.getByRole('slider', { name: 'Compare original and processed images' });
     await expect(slider).toBeVisible();
@@ -57,7 +57,7 @@ test('single-file upload, format conversion, comparison, image export and visual
     await slider.press('ArrowRight');
     await expect(slider).toHaveValue('1');
     const downloadPromise = page.waitForEvent('download');
-    await page.getByRole('button', { name: 'Download image' }).click();
+    await page.getByRole('button', { name: 'Download', exact: true }).click();
     const download = await downloadPromise;
     expect(download.suggestedFilename().toLowerCase().endsWith(extension)).toBeTruthy();
     const bytes = await readFile(await download.path());
@@ -109,10 +109,10 @@ test('batch processing, adding via preview drop, per-file selection and ZIP expo
   await page.getByRole('button', { name: 'Selected', exact: true }).click();
   await page.getByRole('button', { name: 'PNG', exact: true }).click();
   await page.getByRole('button', { name: 'Select image red.png' }).click();
-  await page.getByRole('button', { name: 'All images', exact: true }).click();
-  await page.getByRole('button', { name: 'Convert all remaining' }).click();
+  await page.getByRole('button', { name: 'All', exact: true }).click();
+  await page.getByRole('button', { name: 'Process all' }).click();
   await expect(page.getByRole('button', { name: 'Download ZIP' })).toBeEnabled({ timeout: 90_000 });
-  await expect(page.getByText('2 converted')).toBeVisible();
+  await expect(page.getByText('2 ready to export')).toBeVisible();
   const downloadPromise = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Download ZIP' }).click();
   const download = await downloadPromise;

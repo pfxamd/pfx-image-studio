@@ -35,16 +35,15 @@ test('10 raster images downscale, convert and download without broken queue stat
   );
   const rail = page.getByRole('complementary', {name:'Image files'});
   await expect(rail.locator('[role="listitem"]')).toHaveCount(10);
-  await page.getByRole('checkbox', {name:'Resize image'}).check();
+  await page.getByRole('button', { name: 'Resize', exact: true }).click();
   await page.getByRole('spinbutton', {name:'Maximum width in pixels'}).fill('480');
   const start = Date.now();
-  await page.getByRole('button', {name:'Convert all remaining'}).click();
+  await page.getByRole('button', {name:'Process all'}).click();
   await expect(rail.locator('[role="listitem"]').filter({hasText:'Done'}))
     .toHaveCount(10, {timeout:100_000});
   await expect(rail.locator('[role="listitem"]').filter({hasText:'Failed'}))
     .toHaveCount(0);
-  const inspector = page.getByRole('complementary', {name:'Processing settings'});
-  await expect(inspector.getByText('480 × 320', {exact:true})).toBeVisible();
+  await expect(page.getByText('480 × 320 px', {exact:true})).toBeVisible();
   await expect(page.getByRole('button', {name:'Download ZIP'})).toBeEnabled();
   const downloadPromise = page.waitForEvent('download');
   await page.getByRole('button', {name:'Download ZIP'}).click();
