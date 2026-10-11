@@ -284,7 +284,8 @@
   .railAdd { width:70px; flex:none; border-top:0; border-left:1px solid var(--studio-line); padding:7px; display:flex; align-items:center; }
   .previewStage { padding:11px; gap:6px; }
   .previewHead { min-height:22px; }
-  .previewHead h1 { display:none; }
+  .previewHead h1 { display:block; font-size:12px; }
+  .previewHead .eyebrow { display:none; }
   .previewTabs, .zoomTools { gap:2px; }
   .tab, .tabActive { padding-inline:9px; font-size:11px !important; }
   .zoomTools button { min-width:40px; min-height:40px; }
