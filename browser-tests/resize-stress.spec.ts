@@ -31,10 +31,10 @@ test('serialized raster resizing completes a 3-image batch without UI stall', as
   page.on('pageerror', e => errors.push(e.message));
   await page.goto('/');
   await setImages(page, 3, 1400, 920);
-  await page.getByRole('checkbox', { name: 'Resize image' }).check();
+  await page.getByRole('button', { name: 'Resize', exact: true }).click();
   await page.getByRole('spinbutton', { name: 'Maximum width in pixels' }).fill('700');
   const started = Date.now();
-  await page.getByRole('button', { name: 'Convert all remaining' }).click();
+  await page.getByRole('button', { name: 'Process all' }).click();
   // Controls are on the main UI thread; this check exposes synchronous hangs.
   await expect(page.getByRole('button', { name: 'Cancel all' })).toBeVisible();
   const rail = page.getByRole('complementary', { name: 'Image files' });
@@ -42,8 +42,7 @@ test('serialized raster resizing completes a 3-image batch without UI stall', as
     timeout: 120_000
   });
   await expect(page.getByRole('button', { name: 'Download ZIP' })).toBeEnabled();
-  const inspector = page.getByRole('complementary', { name: 'Processing settings' });
-  await expect(inspector.getByText('700 × 460', { exact: true })).toBeVisible();
+  await expect(page.getByText('700 × 460 px', { exact: true })).toBeVisible();
   expect(errors).toEqual([]);
   console.log('Synthetic 3-image batch duration ms: ' + (Date.now() - started));
 });
@@ -53,20 +52,20 @@ test('cancel queued or running resize jobs, then retry successfully', async ({ p
   page.on('pageerror', e => errors.push(e.message));
   await page.goto('/');
   await setImages(page, 3, 1800, 1200);
-  await page.getByRole('checkbox', { name: 'Resize image' }).check();
+  await page.getByRole('button', { name: 'Resize', exact: true }).click();
   await page.getByRole('spinbutton', { name: 'Maximum width in pixels' }).fill('800');
-  await page.getByRole('button', { name: 'Convert all remaining' }).click();
+  await page.getByRole('button', { name: 'Process all' }).click();
   await expect(page.getByRole('button', { name: 'Cancel all' })).toBeVisible();
   await page.getByRole('button', { name: 'Cancel all' }).click();
   const rail = page.getByRole('complementary', { name: 'Image files' });
   await expect(rail.locator('[role="listitem"]').filter({ hasText: 'Cancelled' })).not.toHaveCount(0, {
     timeout: 30_000
   });
-  await expect(page.getByRole('button', { name: 'Convert all remaining' })).toBeVisible({
+  await expect(page.getByRole('button', { name: 'Process all' })).toBeVisible({
     timeout: 30_000
   });
   // Cancellation must leave the app usable, without leaked queue reservations.
-  await page.getByRole('button', { name: 'Convert all remaining' }).click();
+  await page.getByRole('button', { name: 'Process all' }).click();
   await expect(rail.locator('[role="listitem"]').filter({ hasText: 'Done' })).toHaveCount(3, {
     timeout: 120_000
   });
