@@ -49,6 +49,23 @@ try {
   console.log('PUBLIC_BROWSER_CONVERSION_VERIFIED', JSON.stringify({
     page:site,version,dimensions:'80x56',format:'webp',bytes:bytes.length
   }));
+  const diagnosticUrl = new URL('diagnostics/', site).href;
+  await page.goto(diagnosticUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await page.getByRole('heading', { name: 'Image processing diagnostic' })
+    .waitFor({ state: 'visible', timeout: 15000 });
+  assert.ok((await page.locator('#version').innerText()).includes(version));
+  await page.getByRole('button', { name: 'Run diagnostic' }).click();
+  await page.locator('#badge').getByText('Completed')
+    .waitFor({ state: 'visible', timeout: 90000 });
+  const report = JSON.parse(await page.locator('#report').innerText());
+  assert.equal(report.result, 'passed');
+  assert.equal(report.release, version);
+  assert.equal(report.cases.length, 4);
+  assert.equal(report.cases[3].repetitions, 10);
+  assert.deepEqual(errors, []);
+  console.log('PUBLIC_DEVICE_DIAGNOSTICS_VERIFIED', JSON.stringify({
+    page:diagnosticUrl, release:version, samples:13, elapsedMs:report.totalElapsedMs
+  }));
 } finally {
   await browser?.close();
 }
