@@ -28,5 +28,5 @@ test('Raster Core identifies a selected source while Image3 conversion remains a
 
   // The existing worker codec path is unchanged by metadata inspection.
   await page.getByRole('button', { name: /Convert image/ }).click();
-  await expect(page.getByText('Output ready')).toBeVisible({ timeout: 60_000 });
+  await expect(page.getByText('Output ready', { exact: true }).first()).toBeVisible({ timeout: 60_000 });
 });
