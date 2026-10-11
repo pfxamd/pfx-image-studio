@@ -26,3 +26,6 @@ jobs:
         run: npx playwright test browser-tests/resize-stress.spec.ts --project=chromium --project=firefox --project=chromium-mobile
       - name: Ten-image acceptance on Chromium, Firefox and mobile emulation
         run: npx playwright test browser-tests/release-acceptance.spec.ts --project=chromium --project=firefox --project=chromium-mobile
+
+      - name: Run on-device diagnostics UI and cancel in desktop/mobile browsers
+        run: npx playwright test browser-tests/device-diagnostics.spec.ts --project=chromium --project=firefox --project=chromium-mobile
