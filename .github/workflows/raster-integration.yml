@@ -17,6 +17,8 @@ jobs:
       - name: Verify frozen converter and app
         run: npm run check && npm run check:app
       - name: Install browser for end-to-end inspection
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps chromium firefox
       - name: Test Raster Core inspection, optional resize and existing conversion
         run: npx playwright test browser-tests/raster-inspection.spec.ts browser-tests/raster-resize.spec.ts browser-tests/raster-raw-pipeline.spec.ts --project=chromium
+      - name: Stress-test resizing in Chromium, Firefox and mobile emulation
+        run: npx playwright test browser-tests/resize-stress.spec.ts --project=chromium --project=firefox --project=chromium-mobile
