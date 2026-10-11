@@ -40,7 +40,7 @@
     "motion": "13.5.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",
-    "@pfxamd/raster-core": "github:pfxamd/pfx-raster-core#7f466531d1a584fb8296e3f5d0e2477d6b55dbd2"
+    "@pfxamd/raster-core": "github:pfxamd/pfx-raster-core#3ecdb9f82cc8f5d400a9c6565146b1de6bca09e4"
   },
   "devDependencies": {
     "@playwright/test": "1.63.0",

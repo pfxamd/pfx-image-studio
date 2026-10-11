@@ -2,7 +2,7 @@
 
 Live app: https://pfxamd.github.io/pfx-image-studio/
 
-**App release:** Alpha 0.3.0. The browser interface release is independent of the frozen conversion core (`0.1.0`). The navbar badge reads from `app/release.ts`. Increase `studioVersion` with every change; CI and the Pages deployment workflow reject updates without a version increase.
+**App release:** Alpha 0.3.1. The browser interface release is independent of the frozen conversion core (`0.1.0`). The navbar badge reads from `app/release.ts`. Increase `studioVersion` with every change; CI and the Pages deployment workflow reject updates without a version increase.
 
 Browser-first image conversion core for **JPG, PNG and WEBP**.
 
@@ -242,6 +242,23 @@ cold-codec cost and per-phase responsiveness. The benchmark runs locally
 on the user's device, no uploads. Time measurements alone cannot identify
 the exact cause of operating-system scheduling or GPU frame gaps. Firefox
 mobile does not expose reliable process peak RAM via the Web Performance API.
+
+## Pixel-identical faster resizing (Alpha 0.3.1)
+
+Studio now pins the independent Raster Core 0.5.0-alpha.6. The browser Lanczos3
+filter reuses byte-strided tap addresses and optimizes fully opaque images,
+without changing its filtering result. Five deterministic fixtures check every
+RGBA byte against the previous core version (including semi-transparent alpha,
+vertical-first, thin-line, and late-alpha cases).
+
+A private real-life photograph and several large synthetic RGBA inputs were
+compared locally in Chromium; pixel outputs matched bit-for-bit and the
+filter ran faster on the test machine. Actual mobile Firefox performance
+requires a new on-device run: /diagnostics/ shows stage-specific resample
+timing, and may show smaller improvements than Chromium.
+
+No changes to Image3 codecs, conversion options, download behavior, ICC
+permissions, or memory bounds. The source photo was not committed.
 
 ## Application foundation
 
