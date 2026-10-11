@@ -197,6 +197,7 @@
 .emptyIntro h2 { margin:0; font-size:clamp(28px,4vw,45px); font-weight:710; letter-spacing:-.065em; line-height:1.1; }
 .emptyIntro p { margin:0; color:var(--studio-muted); font-size:13px; line-height:1.45; }
 .emptyFeatures { display:none; }
+.previewError { flex:none; margin:0; padding:8px 11px; border-left:3px solid #ed7e79; background:rgba(237,126,121,.1); color:var(--studio-text); font-size:12px; line-height:1.3; }
 
 .fileRail { width:170px; flex:0 0 170px; min-width:0; display:flex; flex-direction:column; overflow:hidden; border-radius:14px; border:1px solid var(--studio-line); background:var(--studio-chrome); }
 .railHeader { flex:none; display:flex; align-items:center; min-height:48px; padding:0 13px; border-bottom:1px solid var(--studio-line); }
@@ -291,7 +292,7 @@
   .previewFooter { font-size:10px; }
   .actionDock { flex:0 0 74px; padding:0 10px; gap:5px; }
   .actionGroup { gap:5px; }
-  .quietButton { display:none; }
+  .quietButton { padding:0 8px; }
   .actionSeparator { display:none; }
   .secondaryButton { font-size:11px !important; padding:0 9px; }
   .primaryButton { min-width:0; padding:0 12px; font-size:12px !important; }
@@ -322,10 +323,15 @@
   .zoomTools .zoomDisplay { min-width:49px; }
   .previewStage { padding:8px; }
   .statusCluster { display:none; }
-  .actionDock { flex-basis:65px; }
-  .actionGroup { flex:1; justify-content:space-between; }
-  .secondaryButton { flex:1; }
-  .primaryButton { flex:1.2; }
+  .actionDock { flex-basis:68px; }
+  .actionDock[data-batch='true'] { flex-basis:113px; }
+  .actionGroup { flex:1; justify-content:flex-end; flex-wrap:wrap; align-content:center; gap:6px; }
+  .quietButton { height:40px; flex:none; }
+  .secondaryButton { flex:0 1 auto; }
+  .primaryButton { flex:0 1 auto; }
+  .actionDock[data-batch='true'] .actionGroup { justify-content:space-between; }
+  .actionDock[data-batch='true'] .secondaryButton,
+  .actionDock[data-batch='true'] .primaryButton { flex:1 1 auto; }
   .emptyIntro h2 { font-size:27px; }
   .emptyIntro p { font-size:11px; }
 }
