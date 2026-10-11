@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { studioReleaseLabel, studioVersion } from '../app/release';
 
 test('device diagnostic uses actual workers and exports a truthful local report', async ({ page }) => {
   test.setTimeout(120_000);
@@ -6,14 +7,14 @@ test('device diagnostic uses actual workers and exports a truthful local report'
   page.on('pageerror', error => errors.push(error.message));
   await page.goto('/diagnostics/');
   await expect(page.getByRole('heading', {name:'Image processing diagnostic'})).toBeVisible();
-  await expect(page.locator('#version')).toContainText('Alpha 0.3.1');
+  await expect(page.locator('#version')).toContainText(studioReleaseLabel);
   await page.getByRole('button', {name:'Run diagnostic'}).click();
   await expect(page.locator('#badge')).toHaveText('Completed', {timeout:110_000});
   await expect(page.locator('#counter')).toHaveText('31/31');
   const json = await page.locator('#report').innerText();
   const report = JSON.parse(json);
   expect(report.result).toBe('passed');
-  expect(report.release).toBe('0.3.1');
+  expect(report.release).toBe(studioVersion);
   expect(report.schemaVersion).toBe(3);
   expect(report.cases).toHaveLength(6);
   expect(report.cases.map((entry: {repetitions:number}) => entry.repetitions))
