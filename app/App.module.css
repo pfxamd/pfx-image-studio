@@ -892,3 +892,18 @@
   .exportActions button { font-size: 11px; }
   .rangeEnds { font-size: 10px; }
 }
+
+/* Alpha 0.2.4: compact, optional Raster Core downscale control. */
+.resizeField {
+  display: grid; grid-template-columns: minmax(0, 1fr) 86px auto;
+  align-items: center; gap: 9px; color: var(--studio-muted); font-size: 11px;
+}
+.resizeField input {
+  width: 100%; min-width: 0; height: 34px; padding: 0 8px;
+  color: var(--studio-text); border: 1px solid var(--studio-line-bright);
+  border-radius: 7px; background: var(--studio-surface);
+  font: inherit; font-variant-numeric: tabular-nums;
+}
+.resizeField input:focus-visible {
+  outline: 2px solid var(--studio-blue); outline-offset: 1px;
+}

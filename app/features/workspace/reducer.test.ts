@@ -55,6 +55,31 @@ describe('workspaceReducer', () => {
     expect(next.settings.format).toBe('webp');
   });
 
+  it('keeps resizing disabled by default and invalidates outputs on resize changes', () => {
+    expect(initialWorkspaceState.settings.resizeEnabled).toBe(false);
+    expect(initialWorkspaceState.settings.resizeMaxWidth).toBe(1200);
+    const state = { ...initialWorkspaceState, items: [completedItem('a')] };
+    const modified = workspaceReducer(state, {
+      type: 'settings', patch: { resizeEnabled: true, resizeMaxWidth: 800 },
+    });
+    expect(modified.items[0]?.result).toBeUndefined();
+    expect(modified.items[0]?.status).toBe('ready');
+    expect(modified.settings.resizeEnabled).toBe(true);
+    expect(modified.settings.resizeMaxWidth).toBe(800);
+  });
+
+  it('supports resizing for selected files only', () => {
+    const state = { ...initialWorkspaceState, items: [completedItem('a'), completedItem('b')] };
+    const next = workspaceReducer(state, {
+      type: 'settings-item', id: 'a',
+      patch: { resizeEnabled: true, resizeMaxWidth: 640 },
+    });
+    expect(next.items[0]?.overrideSettings?.resizeEnabled).toBe(true);
+    expect(next.items[0]?.overrideSettings?.resizeMaxWidth).toBe(640);
+    expect(next.items[1]?.result).toBe(state.items[1]?.result);
+    expect(next.settings.resizeEnabled).toBe(false);
+  });
+
   it('clears per-item overrides when the global settings change', () => {
     const overridden = { ...makeItem(), overrideSettings: { ...initialWorkspaceState.settings, format: 'jpeg' as const } };
     const state = { ...initialWorkspaceState, items: [overridden] };

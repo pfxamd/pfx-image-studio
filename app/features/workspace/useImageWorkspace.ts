@@ -11,6 +11,7 @@ import {
 } from '../../../src/index.js';
 import { createImage3WorkerPool } from '../../lib/createWorkerPool.js';
 import { downloadResult, downloadResults } from '../../lib/download.js';
+import { validateResizeWidth } from '../../lib/resizeSettings.js';
 import { partitionImageFiles } from './files.js';
 import { workspaceReducer } from './reducer.js';
 import {
@@ -120,9 +121,14 @@ export function useImageWorkspace() {
       controllers.current.set(id, controller);
       dispatch({ type: 'start', id });
 
-      const options = buildConversionOptions(item.overrideSettings ?? stateRef.current.settings);
+      const itemSettings = item.overrideSettings ?? stateRef.current.settings;
+      const options = {
+        ...buildConversionOptions(itemSettings),
+        ...(itemSettings.resizeEnabled ? { rasterMaxWidth: itemSettings.resizeMaxWidth } : {}),
+      };
 
       try {
+        if (itemSettings.resizeEnabled) validateResizeWidth(itemSettings.resizeMaxWidth);
         let attempt = 0;
 
         while (attempt < 2) {
@@ -249,15 +255,15 @@ function getErrorMessage(error: unknown): string {
   if (error instanceof Image3CoreError) {
     switch (error.code) {
       case 'INVALID_FILE':
-        return 'Invalid image file.';
+        return error.message.startsWith('Resize:') ? error.message : 'Invalid image file.';
       case 'UNSUPPORTED_FORMAT':
-        return 'Unsupported image format.';
+        return error.message.startsWith('Resize:') ? error.message : 'Unsupported image format.';
       case 'DECODE_FAILED':
-        return 'The image could not be decoded.';
+        return error.message.startsWith('Resize:') ? error.message : 'The image could not be decoded.';
       case 'ENCODE_FAILED':
         return 'The image could not be encoded.';
       case 'OUT_OF_MEMORY':
-        return 'Not enough memory to convert this image.';
+        return error.message.startsWith('Resize:') ? error.message : 'Not enough memory to convert this image.';
       case 'CANCELLED':
         return 'Conversion cancelled.';
       case 'INTERNAL_ERROR':
