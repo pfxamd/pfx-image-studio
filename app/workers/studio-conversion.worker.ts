@@ -22,7 +22,7 @@ scope.addEventListener('message', (event: MessageEvent<WorkerRequest>) => {
 async function runConversion(request: WorkerRequest): Promise<void> {
   const started = performance.now();
   const diagnostic = (request.options as typeof request.options & { diagnosticTiming?: boolean }).diagnosticTiming === true;
-  const stages: Partial<DiagnosticWorkerTiming> = {};
+  const stages: { -readonly [K in keyof DiagnosticWorkerTiming]?: DiagnosticWorkerTiming[K] } = {};
   const finish = (result: ConversionResult): TimedConversionResult => diagnostic
     ? { ...result, diagnosticTiming: { ...stages, workerElapsedMs: performance.now() - started } }
     : result;
