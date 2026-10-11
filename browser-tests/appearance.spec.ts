@@ -26,3 +26,25 @@ test('appearance toggle persists and desktop workspace stays within the viewport
   expect(bounds.documentHeight).toBeLessThanOrEqual(bounds.viewportHeight + 1);
   expect(bounds.documentWidth).toBeLessThanOrEqual(bounds.viewportWidth + 1);
 });
+
+
+test('operations keep a stable canvas and usable click targets without page scroll', async ({ page }) => {
+  await page.setViewportSize({ width: 1366, height: 768 });
+  await page.goto('/');
+  const initial = await page.locator('section[aria-label="Image preview"]').boundingBox();
+  expect(initial).not.toBeNull();
+  for (const name of ['Optimize', 'Resize', 'Inspect', 'Convert']) {
+    const tab = page.getByRole('button', { name, exact: true });
+    const size = await tab.boundingBox();
+    expect(size).not.toBeNull();
+    expect(size!.height).toBeGreaterThanOrEqual(44);
+    await tab.click();
+    const stage = await page.locator('section[aria-label="Image preview"]').boundingBox();
+    expect(stage?.y).toBe(initial?.y);
+    expect(stage?.height).toBe(initial?.height);
+    const height = await page.evaluate(() => document.documentElement.scrollHeight - window.innerHeight);
+    expect(height).toBeLessThanOrEqual(1);
+  }
+  await expect(page.getByRole('region', { name: 'Convert controls' })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Resize controls' })).toHaveCount(0);
+});
