@@ -4,5 +4,5 @@
  * The CI release check prevents publication without a new version.
  */
 export const studioChannel = 'Alpha';
-export const studioVersion = '0.2.4';
+export const studioVersion = '0.2.5';
 export const studioReleaseLabel = `${studioChannel} ${studioVersion}`;
