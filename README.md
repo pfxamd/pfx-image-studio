@@ -2,7 +2,7 @@
 
 Live app: https://pfxamd.github.io/pfx-image-studio/
 
-**App release:** Alpha 0.2.4. The browser interface release is independent of the frozen conversion core (`0.1.0`). The navbar badge reads from `app/release.ts`. Increase `studioVersion` with every change; CI and the Pages deployment workflow reject updates without a version increase.
+**App release:** Alpha 0.2.5. The browser interface release is independent of the frozen conversion core (`0.1.0`). The navbar badge reads from `app/release.ts`. Increase `studioVersion` with every change; CI and the Pages deployment workflow reject updates without a version increase.
 
 Browser-first image conversion core for **JPG, PNG and WEBP**.
 
@@ -133,6 +133,21 @@ original ICC bytes, nor exact Sharp resampling. Resizing is an explicit user
 opt-in. Large/unsupported files can fail with a specific error rather than
 silently changing the original. Inactive resize uses the prior conversion
 path unchanged.
+
+## Direct RGBA resampling (Alpha 0.2.5)
+
+The opt-in resize step now calls `resizeToRgba()` from pinned Raster Core
+0.5.0-alpha.3. Raster Core uses an explicit, bounded, premultiplied-alpha
+Lanczos3 downsampler. The application worker passes these raw pixels directly
+to the original Image3 codec registry, preserving the selected JPEG/PNG/WebP
+encoding options. No intermediate PNG is encoded or decoded for resized files.
+
+With resize disabled, or with a maximum width above the source width, the
+original Image3 conversion pipeline still runs unchanged. The same worker-pool
+cancellation, retry and batch queue remain in use. The resampling pipeline
+filters 8-bit sRGB pixels and converts embedded ICC to sRGB when a resize is
+explicitly requested; the original ICC bytes are not retained in resized output.
+Source images are never modified.
 
 ## Application foundation
 
