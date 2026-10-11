@@ -1,6 +1,6 @@
 /**
  * PFx Image Studio application release. Independent of the frozen Image3 Core.
- * Increase studioVersion on EVERY published change (0.2, 0.2.1, 0.2.2, ...).
+ * Increase studioVersion on EVERY published change (0.2, 0.2.1, 0.2.3, ...).
  * The CI release check prevents publication without a new version.
  */
 export const studioChannel = 'Alpha';
