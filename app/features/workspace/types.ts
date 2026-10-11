@@ -4,6 +4,7 @@ import type {
   ConversionStage,
   ImageFormat,
 } from '../../../src/index.js';
+import { DEFAULT_MAX_WIDTH } from '../../lib/resizeSettings.js';
 
 export type WorkspaceItemStatus =
   | 'ready'
@@ -30,6 +31,8 @@ export interface WorkspaceSettings {
   readonly pngCompressionLevel: 1 | 2 | 3 | 4 | 5 | 6;
   readonly webpLossless: boolean;
   readonly jpegBackground: readonly [number, number, number];
+  readonly resizeEnabled: boolean;
+  readonly resizeMaxWidth: number;
 }
 
 export interface WorkspaceState {
@@ -70,6 +73,8 @@ export const initialWorkspaceState: WorkspaceState = {
     pngCompressionLevel: 2,
     webpLossless: false,
     jpegBackground: [255, 255, 255],
+    resizeEnabled: false,
+    resizeMaxWidth: DEFAULT_MAX_WIDTH,
   },
 };
 
