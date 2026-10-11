@@ -2,7 +2,7 @@
 
 Live app: https://pfxamd.github.io/pfx-image-studio/
 
-**App release:** Alpha 0.2.3. The browser interface release is independent of the frozen conversion core (`0.1.0`). The navbar badge reads from `app/release.ts`. Increase `studioVersion` with every change; CI and the Pages deployment workflow reject updates without a version increase.
+**App release:** Alpha 0.2.4. The browser interface release is independent of the frozen conversion core (`0.1.0`). The navbar badge reads from `app/release.ts`. Increase `studioVersion` with every change; CI and the Pages deployment workflow reject updates without a version increase.
 
 Browser-first image conversion core for **JPG, PNG and WEBP**.
 
@@ -113,6 +113,27 @@ independent pinned dependency. Re-evaluate compatibility before changing the
 pin. Source inspection involves browser-native decoding and does not prove
 output color fidelity.
 
+## Optional Raster Core resize (Alpha 0.2.4)
+
+Image Studio now optionally downscales a file to a **maximum width** using
+Raster Core's browser adapter before handing the uncompressed PNG intermediate
+to the **unchanged** Image3 WASM encoder. Resizing is off by default; a smaller
+image is never enlarged or cropped. Aspect ratio is preserved. Each file uses
+its individual effective workspace settings, including batch conversions.
+
+The app-specific conversion worker runs preprocessing inside the already
+memory-weighted Image3WorkerPool. Cancel/retry retires the worker as before;
+no independent unbounded canvas task is started. JPEG, PNG and WebP final
+encoding still use the existing Image3 codec settings. Original encoded size
+and original input format remain attached to the completed result.
+
+**Color fidelity caveat:** Browser Canvas converts ICC-tagged pixels to its
+sRGB rendering space when resizing; it does not guarantee preservation of the
+original ICC bytes, nor exact Sharp resampling. Resizing is an explicit user
+opt-in. Large/unsupported files can fail with a specific error rather than
+silently changing the original. Inactive resize uses the prior conversion
+path unchanged.
+
 ## Application foundation
 
 The current `app/` layer provides:
@@ -134,7 +155,7 @@ The desktop interface uses a fixed-height, image-centered workstation with indep
 
 ## Scope
 
-PFx Image Studio currently focuses on JPG, PNG and WebP conversion. Image resizing, cropping, comparison and export presets are future directions, not existing features. The stable `Image3` core API remains unchanged for compatibility.
+PFx Image Studio currently focuses on JPG, PNG and WebP conversion. Optional max-width downscaling is supported. Cropping and export presets are future directions, not existing features. The stable `Image3` core API remains unchanged for compatibility.
 
 ## License
 
