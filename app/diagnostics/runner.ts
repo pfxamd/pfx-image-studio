@@ -176,7 +176,7 @@ function frameMonitor(onMemory: (value: number) => void) {
   };
 }
 
-async function fixture(width: number, height: number, signal: AbortSignal): Promise<Blob> {
+async function fixture(width: number, height: number, signal: AbortSignal, variant = 0): Promise<Blob> {
   checkStopped(signal);
   const canvas = document.createElement('canvas');
   canvas.width = width;
@@ -191,7 +191,7 @@ async function fixture(width: number, height: number, signal: AbortSignal): Prom
   ctx.fillRect(0, 0, width, height);
   ctx.strokeStyle = 'rgba(255,255,255,.65)';
   ctx.lineWidth = 2;
-  for (let x = 24; x < width; x += 31) {
+  for (let x = 24 + variant * 3; x < width; x += 31) {
     ctx.beginPath();
     ctx.moveTo(x, 20);
     ctx.lineTo(x + 9, height - 20);
@@ -234,9 +234,12 @@ async function measureCase(
   for (let i = 0; i < spec.repeats; i++) {
     checkStopped(signal);
     progress(spec.label + ' · ' + (i + 1) + '/' + spec.repeats);
+    const input = spec.phase === 'stress' && i > 0
+      ? await fixture(spec.width, spec.height, signal, i)
+      : source;
     const start = performance.now();
     const output = await pool.convert(
-      { data: source, name: 'diagnostic.png', mimeType: 'image/png' },
+      { data: input, name: 'diagnostic.png', mimeType: 'image/png' },
       {
         format: 'webp', quality: 82,
         ...(spec.maxWidth === null ? {} : { rasterMaxWidth: spec.maxWidth })
@@ -288,7 +291,7 @@ async function measureCase(
  * Measures cold-vs-warm elapsed conversion, per-case medians and main-thread
  * frame gaps. The first call includes worker startup and potentially lazy WASM
  * initialization; the engine cannot isolate exact WASM initialization time.
- * Synthetic images only; results are local and never uploaded.
+ * The large-image stress uses five distinct generated files. Synthetic images only; results are local and never uploaded.
  */
 export async function runPhoneDiagnostics(
   signal: AbortSignal,
