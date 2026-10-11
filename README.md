@@ -2,7 +2,7 @@
 
 Live app: https://pfxamd.github.io/pfx-image-studio/
 
-**App release:** Alpha 0.2.6. The browser interface release is independent of the frozen conversion core (`0.1.0`). The navbar badge reads from `app/release.ts`. Increase `studioVersion` with every change; CI and the Pages deployment workflow reject updates without a version increase.
+**App release:** Alpha 0.2.7. The browser interface release is independent of the frozen conversion core (`0.1.0`). The navbar badge reads from `app/release.ts`. Increase `studioVersion` with every change; CI and the Pages deployment workflow reject updates without a version increase.
 
 Browser-first image conversion core for **JPG, PNG and WEBP**.
 
@@ -162,6 +162,25 @@ does **not** measure or guarantee peak process RSS on real mobile hardware.
 Browser tests now cover three-image batches and cancellation/retry in
 Chromium, Firefox, and mobile-profile emulated Chromium. The mobile profile
 tests touch/viewport behavior on a desktop runner, **not a physical phone**.
+
+## Deployment verification and release acceptance (Alpha 0.2.7)
+
+GitHub Pages now publishes `release.json` containing the built Git commit SHA and
+Studio release. After each successful Pages upload, a separate verification job
+fetches the actual public site and checks its release metadata against the
+exact pushed commit, checks compiled JavaScript/CSS are served, and converts
+and downloads a test image from the deployed page in Chromium. This detects
+stale or incomplete public deployments, instead of equating build success with
+live availability.
+
+Browser release acceptance separately exercises 10 generated images through
+the optional Raster Core resize queue and the Image3 encoder, verifies all
+complete, and downloads a valid ZIP in Chromium, Firefox and mobile-emulated
+Chromium. Stress cancellation/retry remains covered by the existing tests.
+
+**Limits:** Browser emulation is not measurement on a physical smartphone.
+The release manifest attests source identity but is not a cryptographic
+supply-chain signature. No private user photographs are deployed.
 
 ## Application foundation
 

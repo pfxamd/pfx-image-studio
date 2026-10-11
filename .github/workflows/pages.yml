@@ -9,6 +9,7 @@ permissions:
   contents: read
   pages: write
   id-token: write
+  statuses: write
 
 concurrency:
   group: pages
@@ -44,6 +45,9 @@ jobs:
       - name: Build app
         run: npm run build:app
 
+      - name: Add commit and version attestation to deployed files
+        run: node scripts/write-release-attestation.mjs
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v5
         with:
@@ -60,3 +64,41 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v5
+
+  verify:
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout release
+        uses: actions/checkout@v7
+      - name: Use Node.js 22
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Verify actual public Pages release and compiled assets
+        run: node scripts/verify-live-deployment.mjs
+      - name: Install browser test dependencies
+        run: npm install --no-audit --no-fund
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Verify real conversion against published Pages website
+        run: node scripts/verify-live-browser.mjs
+
+      - name: Report verified live commit status to GitHub
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERIFY_JOB_STATUS: ${{ job.status }}
+        run: |
+          if [ "$VERIFY_JOB_STATUS" = "success" ]; then
+            STATE=success
+            DESCRIPTION="Published Studio commit and browser conversion verified"
+          else
+            STATE=failure
+            DESCRIPTION="Published Studio verification failed or was incomplete"
+          fi
+          gh api "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" -X POST \
+            -f state="$STATE" \
+            -f context="pages/live-verified" \
+            -f description="$DESCRIPTION" \
+            -f target_url="https://pfxamd.github.io/pfx-image-studio/"
