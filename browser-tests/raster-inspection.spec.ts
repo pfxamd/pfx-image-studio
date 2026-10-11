@@ -20,13 +20,15 @@ test('Raster Core identifies a selected source while Image3 conversion remains a
   };
   await page.locator('input[type="file"]').first().setInputFiles(file);
 
-  await expect(page.getByText('Source dimensions')).toBeVisible();
+  await page.getByRole('button', { name: 'Inspect', exact: true }).click();
+  await expect(page.getByText('DIMENSIONS')).toBeVisible();
   await expect(page.getByText('4 × 3', { exact: true })).toBeVisible();
-  await expect(page.getByText('Transparency')).toBeVisible();
+  await expect(page.getByText('TRANSPARENCY')).toBeVisible();
   await expect(page.getByText('Yes', { exact: true })).toBeVisible();
-  await expect(page.getByText('ICC profile')).toBeVisible();
+  await expect(page.getByText('ICC PROFILE')).toBeVisible();
 
   // The existing worker codec path is unchanged by metadata inspection.
+  await page.getByRole('button', { name: 'Convert', exact: true }).click();
   await page.getByRole('button', { name: /Convert image/ }).click();
-  await expect(page.getByText('Output ready', { exact: true }).first()).toBeVisible({ timeout: 60_000 });
+  await expect(page.getByRole('button', { name: 'Download', exact: true })).toBeEnabled({ timeout: 60_000 });
 });
