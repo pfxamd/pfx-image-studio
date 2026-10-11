@@ -22,7 +22,7 @@ export interface WorkspaceItem {
   readonly stage: ConversionStage | undefined;
   readonly progress: number;
   readonly result: ConversionResult | undefined;
-  readonly resultOperation?: OperationId;
+  readonly resultOperation?: OperationId | undefined;
   readonly overrideSettings?: WorkspaceSettings | undefined;
   readonly error: string | undefined;
 }
