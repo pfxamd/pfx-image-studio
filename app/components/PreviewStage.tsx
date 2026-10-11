@@ -118,6 +118,7 @@ export function PreviewStage({ selected, onFiles }: PreviewStageProps) {
               <button type="button" aria-label="Zoom in" disabled={zoom >= 3} onClick={() => changeZoom(zoom + 0.25)}>+</button>
             </div>
           </div>
+          {selected.status === 'error' && <p className={styles.previewError} role="alert">{selected.error ?? 'Could not process image.'}</p>}
           <div className={styles.previewCanvas} onPointerDown={onPointerDown}
             onPointerMove={onPointerMove} onPointerUp={onPointerUp}
             onPointerCancel={onPointerUp} style={{ touchAction: zoom > 1 ? 'none' : 'auto', cursor: zoom > 1 ? 'grab' : 'default' }}>
