@@ -55,7 +55,7 @@ test('device diagnostic uses actual workers and exports a truthful local report'
   expect(report.totalElapsedMs).toBeGreaterThan(0);
   expect(report.responsiveness.animationFrames).toBeGreaterThan(0);
   await expect(page.getByText('Warmed median')).toBeVisible();
-  await expect(page.getByText('Fixture preparation')).toBeVisible();
+  await expect(page.getByText('Fixture preparation', { exact: true })).toBeVisible();
   await expect(page.getByText('Lanczos')).toBeVisible();
   await expect(page.getByText('UI gaps >50ms')).toBeVisible();
   await expect(page.getByRole('button', {name:'Copy report'})).toBeEnabled();
