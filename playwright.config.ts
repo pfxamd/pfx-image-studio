@@ -1,4 +1,4 @@
-import { defineConfig } from '@playwright/test';
+import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
   testDir: './browser-tests',
@@ -16,6 +16,11 @@ export default defineConfig({
     timeout: 120_000,
   },
   projects: [
+    {
+      name: 'chromium-mobile',
+      testMatch: /resize-stress\.spec\.ts/,
+      use: { ...devices['Pixel 7'], browserName: 'chromium' },
+    },
     {
       name: 'chromium',
       use: { browserName: 'chromium' },
