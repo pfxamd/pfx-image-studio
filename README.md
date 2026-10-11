@@ -2,7 +2,7 @@
 
 Live app: https://pfxamd.github.io/pfx-image-studio/
 
-**App release:** Alpha 0.2.8. The browser interface release is independent of the frozen conversion core (`0.1.0`). The navbar badge reads from `app/release.ts`. Increase `studioVersion` with every change; CI and the Pages deployment workflow reject updates without a version increase.
+**App release:** Alpha 0.2.9. The browser interface release is independent of the frozen conversion core (`0.1.0`). The navbar badge reads from `app/release.ts`. Increase `studioVersion` with every change; CI and the Pages deployment workflow reject updates without a version increase.
 
 Browser-first image conversion core for **JPG, PNG and WEBP**.
 
@@ -201,6 +201,23 @@ native decoder memory reading. `performance.memory` may be missing or
 limited, and mobile browser backgrounding affects frame measurements.
 The test is intended for an actual foreground phone browser; the CI mobile
 project remains only a desktop-based emulator.
+
+## Repeated on-device validation (Alpha 0.2.9)
+
+The same isolated `/diagnostics/` page now separates worker-pool construction,
+the **first conversion** (including lazy worker/codec startup) and the median
+of 5 subsequent conversions with identical input. The page runs five repeat
+measurements for each medium/large/stress input (up to 3000×2000), plus a
+10-image sequential batch: **31 operations total**. Median and 90th percentile
+latencies, each operation duration, and main-thread frame gaps are included
+per workload. Backgrounding the tab or stopping the test prevents a false
+success report.
+
+First-conversion overhead is not a direct measurement of WASM initialization;
+it may include worker creation, lazy codec loading, decoding and encoding.
+Synthetic images are not a photo-quality test. Browser-provided JS heap is
+not peak device RAM and is often unavailable on Firefox. Avoid comparing
+numbers from different device temperatures or browser states as benchmarks.
 
 ## Application foundation
 
