@@ -55,7 +55,7 @@ try {
     .waitFor({ state: 'visible', timeout: 15000 });
   assert.ok((await page.locator('#version').innerText()).includes(version));
   await page.getByRole('button', { name: 'Run diagnostic' }).click();
-  await page.locator('#badge').getByText('Completed')
+  await page.getByText('Completed', { exact: true })
     .waitFor({ state: 'visible', timeout: 90000 });
   const report = JSON.parse(await page.locator('#report').innerText());
   assert.equal(report.result, 'passed');
