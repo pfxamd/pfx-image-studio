@@ -2,7 +2,7 @@
 
 Live app: https://pfxamd.github.io/pfx-image-studio/
 
-**App release:** Alpha 0.2.5. The browser interface release is independent of the frozen conversion core (`0.1.0`). The navbar badge reads from `app/release.ts`. Increase `studioVersion` with every change; CI and the Pages deployment workflow reject updates without a version increase.
+**App release:** Alpha 0.2.6. The browser interface release is independent of the frozen conversion core (`0.1.0`). The navbar badge reads from `app/release.ts`. Increase `studioVersion` with every change; CI and the Pages deployment workflow reject updates without a version increase.
 
 Browser-first image conversion core for **JPG, PNG and WEBP**.
 
@@ -148,6 +148,20 @@ cancellation, retry and batch queue remain in use. The resampling pipeline
 filters 8-bit sRGB pixels and converts embedded ICC to sRGB when a resize is
 explicitly requested; the original ICC bytes are not retained in resized output.
 Source images are never modified.
+
+## Resize performance and concurrency (Alpha 0.2.6)
+
+The app adds a dedicated abort-aware single-flight queue for the optional,
+memory-heavy Raster Core resize operation. Only one resized image occupies
+the extra Canvas/Float32 RGBA memory at a time; ordinary Image3 jobs retain
+their original worker concurrency. Queued resize jobs can be cancelled promptly,
+and permit release is idempotent. Pixel quality and codec settings are unchanged.
+This reduces the risk of concurrent working buffers exhausting memory; it
+does **not** measure or guarantee peak process RSS on real mobile hardware.
+
+Browser tests now cover three-image batches and cancellation/retry in
+Chromium, Firefox, and mobile-profile emulated Chromium. The mobile profile
+tests touch/viewport behavior on a desktop runner, **not a physical phone**.
 
 ## Application foundation
 
