@@ -133,11 +133,11 @@ export function App() {
         </div>
       </main>
 
-      <footer className={styles.actionDock}>
+      <footer className={styles.actionDock} data-batch={items.length > 1}>
         <div className={styles.statusCluster} aria-live="polite" role="status">
           <span className={busy ? styles.statusPulse : styles.statusDot} />
           <span className={styles.statusMain}>
-            {busy ? activeCount + ' processing' : operation === 'inspect' ? 'Inspect mode' :
+            {busy ? (selected?.status === 'converting' ? Math.round(selected.progress * 100) + '% processing' : activeCount + ' processing') : operation === 'inspect' ? 'Inspect mode' :
               selected?.status === 'error' ? 'Processing failed' :
               completedCount ? completedCount + ' ready to export' : items.length ? 'Ready to process' : 'Waiting for images'}
           </span>
@@ -146,8 +146,10 @@ export function App() {
         <div className={styles.actionGroup}>
           <button className={styles.quietButton} type="button" disabled={!selected || busy}
             onClick={() => { if (selected) workspace.removeItem(selected.id); }}>Remove</button>
-          <button className={styles.quietButton} type="button" disabled={!items.length || busy}
-            onClick={clearAll}>Clear all</button>
+          {items.length > 1 && (
+            <button className={styles.quietButton} type="button" disabled={busy}
+              onClick={clearAll}>Clear all</button>
+          )}
           <span className={styles.actionSeparator} />
           {operation === 'inspect' ? (
             <span className={styles.inspectHint}>Read-only inspection</span>
