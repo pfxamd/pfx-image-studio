@@ -2,7 +2,7 @@
 
 Live app: https://pfxamd.github.io/pfx-image-studio/
 
-**App release:** Alpha 0.2.2. The browser interface release is independent of the frozen conversion core (`0.1.0`). The navbar badge reads from `app/release.ts`. Increase `studioVersion` with every change; CI and the Pages deployment workflow reject updates without a version increase.
+**App release:** Alpha 0.2.3. The browser interface release is independent of the frozen conversion core (`0.1.0`). The navbar badge reads from `app/release.ts`. Increase `studioVersion` with every change; CI and the Pages deployment workflow reject updates without a version increase.
 
 Browser-first image conversion core for **JPG, PNG and WEBP**.
 
@@ -95,6 +95,23 @@ npm install
 npm run check
 npm run test:browser
 ```
+
+## Raster Core integration (Alpha 0.2.3)
+
+PFx Image Studio now consumes the independent PFx Raster Core browser entry
+(pinned to a reviewed Git commit) **only for selected-image source inspection**.
+It shows original dimensions, transparency and presence of an ICC profile in
+the existing File details panel. This inspection is lazy, bounded to 16 MiB
+per file, and never blocks conversion if a file is too large, malformed or
+unsupported by the browser adapter.
+
+The original frozen Image3 v0.1 worker/WASM conversion engine remains the
+sole converter: no codec, progress, cancellation, retry, batching, quality
+setting, output type or download behavior has changed. The external Raster
+Core is not bundled by copying its source into this repository; it is an
+independent pinned dependency. Re-evaluate compatibility before changing the
+pin. Source inspection involves browser-native decoding and does not prove
+output color fidelity.
 
 ## Application foundation
 
