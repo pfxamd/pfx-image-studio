@@ -41,3 +41,6 @@ pre{max-height:310px;overflow:auto;padding:12px;background:#101317;color:#b9c9d8
 .tableScroll .caseTable{min-width:480px}
 .caseTable th:not(:first-child),.caseTable td:not(:first-child){text-align:right;white-space:nowrap}
 .caseTable th:first-child,.caseTable td:first-child{max-width:225px}
+
+/* Phase-by-phase profiler remains horizontally scrollable on narrow devices. */
+.tableScroll .caseTable{min-width:980px}
