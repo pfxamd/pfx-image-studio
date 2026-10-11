@@ -207,7 +207,7 @@ project remains only a desktop-based emulator.
 The same isolated `/diagnostics/` page now separates worker-pool construction,
 the **first conversion** (including lazy worker/codec startup) and the median
 of 5 subsequent conversions with identical input. The page runs five repeat
-measurements for each medium/large/stress input (up to 3000×2000), plus a
+measurements for medium and large inputs, plus five distinct generated 3000×2000 stress images and a
 10-image sequential batch: **31 operations total**. Median and 90th percentile
 latencies, each operation duration, and main-thread frame gaps are included
 per workload. Backgrounding the tab or stopping the test prevents a false
