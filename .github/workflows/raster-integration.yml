@@ -18,5 +18,5 @@ jobs:
         run: npm run check && npm run check:app
       - name: Install browser for end-to-end inspection
         run: npx playwright install --with-deps chromium
-      - name: Test real Raster Core inspection and existing conversion
-        run: npx playwright test browser-tests/raster-inspection.spec.ts --project=chromium
+      - name: Test Raster Core inspection, optional resize and existing conversion
+        run: npx playwright test browser-tests/raster-inspection.spec.ts browser-tests/raster-resize.spec.ts --project=chromium
