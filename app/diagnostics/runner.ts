@@ -245,7 +245,7 @@ async function measureCase(
     const output = await pool.convert(
       { data: input, name: 'diagnostic.png', mimeType: 'image/png' },
       {
-        format: 'webp', quality: 82, diagnosticTiming: true,
+        format: 'webp', quality: 82, ...{ diagnosticTiming: true },
         ...(spec.maxWidth === null ? {} : { rasterMaxWidth: spec.maxWidth })
       },
       { signal }
@@ -352,7 +352,7 @@ export async function runPhoneDiagnostics(
     const coldStart = performance.now();
     const output = await pool.convert(
       { data: firstFixture, name: 'diagnostic.png', mimeType: 'image/png' },
-      { format: 'webp', quality: 82, diagnosticTiming: true }, { signal }
+      { format: 'webp', quality: 82, ...{ diagnosticTiming: true } }, { signal }
     );
     const firstConversionMs = performance.now() - coldStart;
     const coldTiming = requireTiming(output as TimedConversionResult);
