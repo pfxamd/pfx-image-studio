@@ -133,24 +133,27 @@ export function App() {
         </div>
       </main>
 
-      <footer className={styles.actionDock} data-batch={items.length > 1}>
-        <div className={styles.statusCluster} aria-live="polite" role="status">
-          <span className={busy ? styles.statusPulse : styles.statusDot} />
-          <span className={styles.statusMain}>
-            {busy ? (selected?.status === 'converting' ? Math.round(selected.progress * 100) + '% processing' : activeCount + ' processing') : operation === 'inspect' ? 'Inspect mode' :
-              selected?.status === 'error' ? 'Processing failed' :
-              completedCount ? completedCount + ' ready to export' : items.length ? 'Ready to process' : 'Waiting for images'}
-          </span>
-          <span className={styles.statusCount}>{items.length} {items.length === 1 ? 'image' : 'images'}</span>
+      <footer className={styles.actionDock} data-batch={items.length > 1} aria-label="Image actions">
+        <div className={styles.actionMeta}>
+          <div className={styles.statusCluster} aria-live="polite" role="status">
+            <span className={busy ? styles.statusPulse : styles.statusDot} />
+            <span className={styles.statusMain}>
+              {busy ? (selected?.status === 'converting' ? Math.round(selected.progress * 100) + '% processing' : activeCount + ' processing') : operation === 'inspect' ? 'Inspect mode' :
+                selected?.status === 'error' ? 'Processing failed' :
+                completedCount ? completedCount + ' ready to export' : items.length ? 'Ready to process' : 'Waiting for images'}
+            </span>
+            <span className={styles.statusCount}>{items.length} {items.length === 1 ? 'image' : 'images'}</span>
+          </div>
+          <div className={styles.utilityActions} aria-label="Manage images">
+            <button className={styles.quietButton} type="button" disabled={!selected || busy}
+              onClick={() => { if (selected) workspace.removeItem(selected.id); }}>Remove</button>
+            {items.length > 1 && (
+              <button className={styles.quietButton} type="button" disabled={busy}
+                onClick={clearAll}>Clear all</button>
+            )}
+          </div>
         </div>
         <div className={styles.actionGroup}>
-          <button className={styles.quietButton} type="button" disabled={!selected || busy}
-            onClick={() => { if (selected) workspace.removeItem(selected.id); }}>Remove</button>
-          {items.length > 1 && (
-            <button className={styles.quietButton} type="button" disabled={busy}
-              onClick={clearAll}>Clear all</button>
-          )}
-          <span className={styles.actionSeparator} />
           {operation === 'inspect' ? (
             <span className={styles.inspectHint}>Read-only inspection</span>
           ) : busy ? (
@@ -161,20 +164,27 @@ export function App() {
             </>
           ) : (
             <>
-              <button className={styles.secondaryButton} type="button" disabled={!selectedResult}
-                onClick={() => { if (selected) workspace.downloadItem(selected.id); }}>Download</button>
+              <div className={styles.individualActions} aria-label="Selected image actions">
+                <button className={styles.secondaryButton} type="button" disabled={!selectedResult}
+                  onClick={() => { if (selected) workspace.downloadItem(selected.id); }}>Download</button>
+                <button className={items.length > 1 ? styles.singleAction : styles.primaryButton}
+                  type="button" disabled={!selected} onClick={processSelected}>
+                  {currentOperation.action}<span aria-hidden="true">↗</span>
+                </button>
+              </div>
               {items.length > 1 && (
-                <button className={styles.secondaryButton} type="button" disabled={!completedCount}
-                  onClick={() => workspace.downloadAll(operation)}>Download ZIP</button>
+                <div className={styles.batchActions} aria-label="Actions for all images">
+                  <span className={styles.batchLabel}>ALL IMAGES</span>
+                  <button className={styles.batchConvert} type="button" disabled={!readyCount}
+                    onClick={() => { void workspace.convertAll(operation); }}>
+                    Process all <span aria-hidden="true">↗</span>
+                  </button>
+                  <button className={styles.batchDownload} type="button" disabled={!completedCount}
+                    onClick={() => workspace.downloadAll(operation)}>
+                    Download ZIP <span aria-hidden="true">↓</span>
+                  </button>
+                </div>
               )}
-              {items.length > 1 && (
-                <button className={styles.secondaryButton} type="button" disabled={!readyCount}
-                  onClick={() => { void workspace.convertAll(operation); }}>Process all</button>
-              )}
-              <button className={styles.primaryButton} type="button" disabled={!selected}
-                onClick={processSelected}>
-                {currentOperation.action}<span aria-hidden="true">↗</span>
-              </button>
             </>
           )}
         </div>
