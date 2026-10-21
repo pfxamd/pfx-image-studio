@@ -1,10 +1,11 @@
+import { pfxReleasePlugin } from "./scripts/pfx-release.mjs";
 import react from '@vitejs/plugin-react';
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
   base: './',
-  plugins: [react()],
+  plugins: [react(), pfxReleasePlugin()],
   build: {
     outDir: 'site-dist',
     emptyOutDir: true,

@@ -2,14 +2,13 @@
  * Verify that public GitHub Pages serves this exact commit, not just that
  * the build and GitHub Pages upload steps succeeded.
  */
-import { readFile } from 'node:fs/promises';
+import { resolveRelease } from './pfx-release.mjs';
 import { execFileSync } from 'node:child_process';
 
 const site = new URL(process.env.PFX_LIVE_URL || 'https://pfxamd.github.io/pfx-image-studio/');
 const expectedCommit = (process.env.GITHUB_SHA ||
   execFileSync('git', ['rev-parse', 'HEAD'], {encoding:'utf8'})).trim();
-const releaseText = await readFile('app/release.ts', 'utf8');
-const expectedVersion = releaseText.match(/export const studioVersion = '([^']+)'/)?.[1];
+const expectedVersion = resolveRelease().version;
 if (!expectedVersion || !/^[a-f0-9]{40}$/.test(expectedCommit)) {
   throw new Error('Invalid expected release identity');
 }

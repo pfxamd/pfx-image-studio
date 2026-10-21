@@ -1,8 +1,6 @@
-/**
- * PFx Image Studio application release. Independent of the frozen Image3 Core.
- * Increase studioVersion on EVERY published change (0.2, 0.2.1, 0.2.2, ...).
- * The CI release check prevents publication without a new version.
- */
-export const studioChannel = 'Alpha';
-export const studioVersion = '0.3.5';
-export const studioReleaseLabel = `${studioChannel} ${studioVersion}`;
+declare const __PFX_APP_RELEASE__: { version: string; channel: string; label: string; commit: string };
+
+// Application release; the processing core keeps its independent version.
+export const studioChannel = __PFX_APP_RELEASE__.channel;
+export const studioVersion = __PFX_APP_RELEASE__.version;
+export const studioReleaseLabel = __PFX_APP_RELEASE__.label;

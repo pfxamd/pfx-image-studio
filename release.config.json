@@ -1,0 +1,23 @@
+{
+  "product": "PFx Image Studio",
+  "channel": "Alpha",
+  "baseline": "b19f0d7e6d682aee573437ae3a6087ee51fe8d44",
+  "baseVersion": "0.3.5",
+  "sourcePaths": [
+    "src",
+    "app",
+    "apps",
+    "public",
+    "assets",
+    "index.html",
+    "diagnostics",
+    "scripts",
+    "release.config.json",
+    "vite.config.ts",
+    "vite.config.js",
+    "package.json",
+    "package-lock.json",
+    "pnpm-lock.yaml",
+    ".github/workflows"
+  ]
+}
