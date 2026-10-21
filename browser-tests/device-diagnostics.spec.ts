@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
-import { studioReleaseLabel, studioVersion } from '../app/release';
+import { resolveRelease } from '../scripts/pfx-release.mjs';
+const { label: studioReleaseLabel, version: studioVersion } = resolveRelease();
 
 test('device diagnostic uses actual workers and exports a truthful local report', async ({ page }) => {
   test.setTimeout(120_000);

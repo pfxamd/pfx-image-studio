@@ -3,6 +3,7 @@
  * opt-in Raster Core resize, Image3 WebP encode, and real download bytes.
  */
 import assert from 'node:assert/strict';
+import { resolveRelease } from './pfx-release.mjs';
 import { readFile } from 'node:fs/promises';
 import { chromium } from '@playwright/test';
 
@@ -15,8 +16,7 @@ try {
   page.on('pageerror', e => errors.push(e.message));
   const response = await page.goto(site, { waitUntil: 'domcontentloaded', timeout: 30000 });
   assert.equal(response?.status(), 200);
-  const version = (await readFile('app/release.ts', 'utf8'))
-    .match(/export const studioVersion = '([^']+)'/)?.[1];
+  const version = resolveRelease().version;
   assert.ok((await page.locator('header').first().innerText()).includes(version),
     'Rendered page version does not match release');
 
