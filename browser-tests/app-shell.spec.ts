@@ -50,19 +50,19 @@ test('editing selected image settings preserves other completed image results', 
   await page.getByRole('button', { name: 'Select image fixture-2.png' }).click();
   await page.getByRole('button', { name: 'Selected', exact: true }).click();
   await page.getByRole('button', { name: 'JPG', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Download image' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Download', exact: true })).toBeDisabled();
   await page.getByRole('button', { name: 'Select image fixture-1.png' }).click();
-  await expect(page.getByRole('button', { name: 'Download image' })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Download', exact: true })).toBeEnabled();
 });
 
 test('mobile layout has no horizontal overflow before and after upload', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: 'Your image workspace' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Image workspace', exact: true })).toBeVisible();
   const measureOverflow = () => page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   expect(await measureOverflow()).toBeLessThanOrEqual(1);
   await addImages(page, 1);
-  await expect(page.getByRole('heading', { name: 'Image preview' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Preview', exact: true })).toBeVisible();
   expect(await measureOverflow()).toBeLessThanOrEqual(1);
   await expect(page.getByRole('button', { name: 'Convert image' })).toBeVisible();
 });
